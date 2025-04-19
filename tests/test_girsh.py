@@ -210,8 +210,6 @@ class TestMain(unittest.TestCase):
             self.assertEqual(ret, 3)
             mock_process_repositories.assert_called()
 
-    # TODO: test cases for reinstall without and with binary args
-
     def test_show_installed(self) -> None:
         dummy_args = DummyArgs(show=True, config="config.yaml")
         dummy_installed_data: dict[Any, Any] = {"a": 1}

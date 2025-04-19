@@ -243,6 +243,13 @@ class TestRunCommands(unittest.TestCase):
         )
         mock_logger.error.assert_called_once_with("Command failed: faulty_command, error: Test Exception")
 
+    @patch("girsh.core.utils.logger")
+    @patch("girsh.core.utils.subprocess.run", return_value=MagicMock(returncode=0, stdout="42", stderr=""))
+    def test_run_command_in_shell(self, mock_run: MagicMock, mock_logger: MagicMock) -> None:
+        self.assertTrue(utils.run_commands(["*echo Test 42 | cut -c6-7"], "test shell"))
+        mock_run.assert_called_once_with("echo Test 42 | cut -c6-7", shell=True, capture_output=True, text=True)  # noqa: S604
+        mock_logger.debug.assert_called_with("Command output: 42, error: , error code: 0")
+
 
 if __name__ == "__main__":
     unittest.main()

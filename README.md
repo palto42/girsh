@@ -49,7 +49,24 @@ Initially, the CI/CD pipeline might be failing due to formatting issues. To reso
 uv run pre-commit run -a
 ```
 
-### 4. Commit the changes
+or run
+
+```bash
+make check`
+```
+
+### 4. Test the code
+
+Run the Python unit tests with the command:
+
+```bash
+make test
+```
+
+- For a console coverage report, run `coverage report`
+- For a local HTML coverage report, run `coverage html`
+
+### 5. Commit the changes
 
 Lastly, commit the changes made by the two steps above to your repository.
 
