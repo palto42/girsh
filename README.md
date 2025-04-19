@@ -76,17 +76,17 @@ For more details, see [here](https://fpgmaas.github.io/cookiecutter-uv/features/
 
 ### 3. Use make commands
 
-| make command | Description                                                      |
-| ------------ | ---------------------------------------------------------------- |
-| install      | Install the virtual environment and install the pre-commit hooks |
-| check        | Run code quality tools.                                          |
-| test         | Test the code with pytest                                        |
-| build        | Build wheel file                                                 |
-| clean-build  | Clean build artifacts                                            |
-| publish      | Publish a release to PyPI.                                       |
-| docs         | Test if documentation can be built without warnings or errors    |
-| docs-serve   | Build and serve the documentation                                |
-| docs-publish | Publish documentation on Docat server (configured in .env)       |
+| make command      | Description                                                      |
+| ----------------- | ---------------------------------------------------------------- |
+| install           | Install the virtual environment and install the pre-commit hooks |
+| check             | Run code quality tools.                                          |
+| test              | Test the code with pytest                                        |
+| build             | Build wheel file                                                 |
+| clean-build       | Clean build artifacts                                            |
+| publish           | Publish a release to PyPI.                                       |
+| build-and-publish | Build and publish.                                               |
+| docs              | Build and serve the documentation                                |
+| docs-test         | Test if documentation can be built without warnings or errors    |
 
 **Note**: `make check` validates the files stages with `git add`.
 Otherwise it may show only "(no files to check)Skipped" messages.
