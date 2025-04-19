@@ -9,6 +9,8 @@ copyright: Maintained by <a href="https://palto42.com">palto42</a>.
 
 nav:
   - Home: index.md
+  - Usage: usage.md
+  - Config: config.md
   - Modules: modules.md
 plugins:
   - search
@@ -16,6 +18,10 @@ plugins:
       handlers:
         python:
           paths: ["src/girsh"]
+          options:
+            show_source: false
+            show_root_heading: true
+            heading_level: 3
 theme:
   name: material
   feature:
