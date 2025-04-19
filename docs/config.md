@@ -68,6 +68,17 @@ If the command is prefixed with a `|`, then errors for this command are ignored.
 
 Example: `|sh -c 'exit 42'`
 
+#### Option to run command in a shell
+
+By default the command is executed as command sequence.
+If a shell is required, e.g. for using pipes or conditions, it can be enabled with the prefix `*`.
+
+Example: `*zellij kill-all-sessions || echo done`
+
+This option can be combined with the "continue on failure":
+
+Example: `|*my_command | grep dummy`
+
 #### Comments
 
 Commands can be disabled as comment using `#` prefix, also within an explicit string.

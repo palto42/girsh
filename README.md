@@ -1,6 +1,7 @@
 # girsh - Git Install Released Software Helper
 
-[![Release](https://img.shields.io/github/v/release/palto42/girsh)](https://img.shields.io/github/v/release/palto42/girsh)
+![python version](https://img.shields.io/badge/python-3.10+-blue.svg)
+[![PyPI](https://img.shields.io/pypi/v/girsh)](https://pypi.org/project/girsh)
 [![Build status](https://img.shields.io/github/actions/workflow/status/palto42/girsh/main.yml?branch=main)](https://github.com/palto42/girsh/actions/workflows/main.yml?query=branch%3Amain)
 [![codecov](https://codecov.io/gh/palto42/girsh/branch/main/graph/badge.svg)](https://codecov.io/gh/palto42/girsh)
 [![Commit activity](https://img.shields.io/github/commit-activity/m/palto42/girsh)](https://img.shields.io/github/commit-activity/m/palto42/girsh)
@@ -48,7 +49,24 @@ Initially, the CI/CD pipeline might be failing due to formatting issues. To reso
 uv run pre-commit run -a
 ```
 
-### 4. Commit the changes
+or run
+
+```bash
+make check`
+```
+
+### 4. Test the code
+
+Run the Python unit tests with the command:
+
+```bash
+make test
+```
+
+- For a console coverage report, run `coverage report`
+- For a local HTML coverage report, run `coverage html`
+
+### 5. Commit the changes
 
 Lastly, commit the changes made by the two steps above to your repository.
 

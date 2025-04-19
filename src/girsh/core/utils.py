@@ -143,7 +143,12 @@ def run_commands(command_list: list[str | None] | None, info: str) -> bool:
             else:  # default is to fail on error
                 fail_on_error = True
             try:
-                cmd_result = subprocess.run(shlex.split(command), capture_output=True, text=True)  # noqa: S603
+                if command.startswith("*"):
+                    # If the command starts with "*", it is executed in a shell
+                    command = command[1:]
+                    cmd_result = subprocess.run(command, shell=True, capture_output=True, text=True)  # noqa: S602
+                else:
+                    cmd_result = subprocess.run(shlex.split(command), capture_output=True, text=True)  # noqa: S603
             except Exception as e:
                 logger.error(f"Command failed: {command}, error: {e}")
                 return False

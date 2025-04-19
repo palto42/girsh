@@ -21,7 +21,7 @@ keywords = ['python']
 name = "girsh"
 readme = "README.md"
 requires-python = ">=3.10,<4.0"
-version = "0.1.30"
+version = "0.1.31"
 
 [project.urls]
 Documentation = "https://palto42.github.io/girsh/"
@@ -107,6 +107,9 @@ preview = true
 
 [tool.coverage.report]
 skip_empty = true
+exclude_lines = [
+  "if __name__ == .__main__.:",
+]
 
 [tool.coverage.run]
 branch = true
