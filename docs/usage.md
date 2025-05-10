@@ -1,22 +1,22 @@
 # Usage
 
 ```text
-usage: girsh [-h] [-r BINARY [BINARY ...] | -u | --uninstall-all | --clean | -s | -e] [-c CONFIG] [-d] [-v] [-g] [-V]
+usage: girsh [-h] [-r BINARY [BINARY ...] | -u | --uninstall-all | --clean | -s | -e] [-c CONFIG] [-d] [-p PROXY] [-v] [-g] [-V]
 
 Git Install Released Software Helper
 
 options:
   -h, --help            show this help message and exit
-  -r BINARY [BINARY ...], --reinstall BINARY [BINARY ...]
+  -r, --reinstall BINARY [BINARY ...]
                         Force re-installation even if version unchanged
   -u, --uninstall       Uninstall previously installed binary if not present in config anymore
   --uninstall-all       Uninstall all previously installed binaries
   --clean               Remove the downloads folder and exit
   -s, --show            Show config and currently installed binaries
   -e, --edit            Open the config file in the default editor
-  -c CONFIG, --config CONFIG
-                        Path to config file, defaults to ~/.config/girsh.yaml
+  -c, --config CONFIG   Path to config file, defaults to ~/.config/girsh.yaml
   -d, --dry-run         Run without actually installing or removing any files.
+  -p, --proxy PROXY     Proxy URL for downloading files
   -v, --verbose         Increase output verbosity (up to 3 times)
   -g, --global          Install as root at system level
   -V, --version         show program's version number and exit
