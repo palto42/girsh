@@ -41,6 +41,7 @@ class General:
     download_dir: Path = Path.home() / ".cache" / "girsh" / "downloads"
     package_pattern: str = r".*x86_64.*(gz|zip)$"  # Regex to find the desired package in the release assets
     package_base_folder: Path = Path("/opt/girsh") if os.geteuid() == 0 else Path.home() / ".local/share/girsh"
+    proxy: str | None = None  # Proxy URL for downloading files
 
     def __setattr__(self, name: str, value: Any) -> None:
         expected_type = self.__annotations__.get(name)
@@ -279,6 +280,7 @@ def get_arguments() -> argparse.Namespace:
     parser.add_argument(
         "-d", "--dry-run", action="store_true", help="Run without actually installing or removing any files."
     )
+    parser.add_argument("-p", "--proxy", type=str, help="Proxy URL for downloading files")
     parser.add_argument("-v", "--verbose", action="count", default=0, help="Increase output verbosity (up to 3 times)")
     parser.add_argument("-g", "--global", dest="system", action="store_true", help="Install as root at system level")
     parser.add_argument("-V", "--version", action="version", version=f"girsh {__version__}")

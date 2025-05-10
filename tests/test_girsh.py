@@ -26,6 +26,7 @@ class DummyArgs:
     reinstall: bool = False
     config: str = "dummy_config.yaml"
     system: bool = False
+    proxy: str | None = None
 
 
 # --- Dummy general config class ---
@@ -64,6 +65,7 @@ def dummy_load_yaml_config(config: str) -> tuple[DummyGeneral, dict]:
     general: Any = DummyGeneral()
     general.installed_file = "dummy_installed_file"
     general.download_dir = "dummy_download_dir"
+    general.proxy = None
     return general, DUMMY_REPO_CONFIG
 
 
@@ -71,6 +73,7 @@ def dummy_load_yaml_config_empty(config: str) -> tuple[DummyGeneral, dict]:
     # Do nothing for testing.
     general: Any = DummyGeneral()
     general.installed_file = "dummy_installed_file"
+    general.proxy = None
     return general, {}
 
 
@@ -219,10 +222,12 @@ class TestMain(unittest.TestCase):
             patch("girsh.girsh.load_yaml_config", side_effect=dummy_load_yaml_config),
             patch("girsh.girsh.load_installed", return_value=(dummy_installed_data)),
             patch("girsh.girsh.show_installed", side_effect=dummy_show_installed) as mock_show,
+            patch("girsh.girsh.os.putenv") as mock_putenv,
         ):
             ret: int = girsh.main()
             self.assertEqual(ret, DUMMY_SHOW_RETURN)
             mock_show.assert_called_once_with(dummy_installed_data, DUMMY_REPO_CONFIG)
+            mock_putenv.assert_not_called()
 
     def test_uninstall_branch(self) -> None:
         dummy_args = DummyArgs(uninstall=True, dry_run=True, config="config.yaml")
@@ -288,6 +293,37 @@ class TestMain(unittest.TestCase):
             ret: int = girsh.main()
             self.assertEqual(ret, 0)
             mock_save.assert_called()
+
+    def test_proxy_argument(self) -> None:
+        dummy_args = DummyArgs(config="config.yaml", proxy="http://proxy.example.com:8080")
+        # Proxy in yaml config is expected to be overwritten by CLI argument
+        general, repos = dummy_load_yaml_config("config.yaml")
+        general.proxy = "http://proxy.yaml.com:8080"  # type: ignore[attr-defined]
+        with (
+            patch("girsh.girsh.get_arguments", return_value=dummy_args),
+            patch("girsh.girsh.load_yaml_config", return_value=(general, repos)),
+            patch("girsh.girsh.os.putenv") as mock_putenv,
+            patch("girsh.girsh.process_repositories", return_value=(None, {})),
+            patch("girsh.girsh.load_installed", return_value=({})),
+            patch("girsh.girsh.save_installed"),
+        ):
+            girsh.main()
+            mock_putenv.assert_called_once_with(b"https_proxy", b"http://proxy.example.com:8080")
+
+    def test_proxy_config_yaml(self) -> None:
+        dummy_args = DummyArgs(config="config.yaml")
+        general, repos = dummy_load_yaml_config("config.yaml")
+        general.proxy = "http://proxy.yaml.com:8080"  # type: ignore[attr-defined]
+        with (
+            patch("girsh.girsh.get_arguments", return_value=dummy_args),
+            patch("girsh.girsh.load_yaml_config", return_value=(general, repos)),
+            patch("girsh.girsh.os.putenv") as mock_putenv,
+            patch("girsh.girsh.process_repositories", return_value=(None, {})),
+            patch("girsh.girsh.load_installed", return_value=({})),
+            patch("girsh.girsh.save_installed"),
+        ):
+            girsh.main()
+            mock_putenv.assert_called_once_with(b"https_proxy", b"http://proxy.yaml.com:8080")
 
 
 class ElevatePrivilegesTest(unittest.TestCase):
