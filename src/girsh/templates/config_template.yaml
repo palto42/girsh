@@ -1,0 +1,60 @@
+# Configuration file for `girsh`
+#
+# Quote strings if it contains any of these characters :-{}[]!#|>&%@
+
+# general:
+  # Optional: Base folder where binaries will be installed.
+  # For non-root users, this should usually be "~/.local/bin"
+  # bin_base_folder: "/usr/local/bin"
+
+  # Optional: Path to the installed file where installed versions and binary names
+  # are stored. If not provided, it defaults to "~/.installed/girsh/girsh.yaml"
+  # installed_file: "/home/your_username/.installed/girsh/girsh.yaml"
+
+  # Optional: Path to the download folder.
+  # If not provided, it defaults to "~/.installed/girsh/downloads"
+  # download_dir: Path = "/my/custom/bin"
+
+  # Optional: Regex pattern to select the release asset, defaults to ".*x86_64.*(gz|zip)$"
+  # package_pattern: ".*aarch64.*(gz|zip)$"
+
+  # Optional: Package base folder (for multi-file packages)
+  # If not provided, it defaults to "~/.local/share/girsh" or "/opt/girsh"
+  # package_base_folder: "/my/packages"
+
+repositories:
+  # List of git repositories from which the released binary should be installed
+  owner/repository-name:
+
+    # Optional: Comment about the installed package
+    # comment: This is an interesting tool
+
+    # Optional: Regex pattern to select the release asset, defaults to ".*x86_64.*(gz|zip)$"
+    # package_pattern: str = ".*amd_64.*gz"
+
+    # Optional: Regex pattern to filter the extracted files to identify the binary.
+    # If the same file name is present in multiple folders, include a (sub-)path.
+    # filter_pattern: "bin/my_binary$"
+
+    # Optional: Renaming rule. If provided, the matching binary will be renamed
+    # to this name before installation.
+    # binary_name: "my-renamed-binary"
+
+    # Optional: Pin to specific version (git tag)
+    # version: v0.41.2
+
+    # Optional: Flag that the packe is not a single binary
+    # multi_file: false
+
+    # Optional: Pre-update/uninstall commands
+    # pre_update_commands:
+    #   - echo "Pre-update command 1"
+    #   - echo "Pre-update command 2"
+
+    # Optional: Post-install/update commands
+    # post_update_commands:
+    #   - echo "Post-update command 1"
+    #   - echo "Post-update command 2"
+
+    # Optional: Download URL template using `{version}` as a placeholder for the release tag
+    # download_url: https://update.code.visualstudio.com/{version}/linux-x64/stable

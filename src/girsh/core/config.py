@@ -210,8 +210,9 @@ def edit_config(config_path: Path) -> int:
         if create_file == "y":
             logger.info("Create config file from template")
             config_path.parent.mkdir(parents=True, exist_ok=True)
-            with resources.path("girsh.templates", "config_template.yaml") as template_path:
-                config_content = template_path.read_text()
+            config_template = resources.files("girsh.templates").joinpath("config_template.yaml")
+            with resources.as_file(config_template) as template_file:
+                config_content = template_file.read_text()
                 config_path.write_text(config_content)
         else:
             logger.error("Operation aborted. No file was created.")
