@@ -3,6 +3,7 @@ import os
 import subprocess
 import tempfile
 import unittest
+from importlib import resources
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -372,7 +373,7 @@ general:
             # Simulate user input "y" and a template from resources.
             with (
                 patch("builtins.input", return_value="y"),
-                patch("girsh.core.config.resources.path", return_value=DummyResource(dummy_template)),
+                patch("girsh.core.config.resources.as_file", return_value=DummyResource(dummy_template)),
                 patch("subprocess.run", return_value=dummy_completed_process),
                 patch.object(logger, "info") as mock_logger_info,
             ):
@@ -461,6 +462,23 @@ general:
                 )
         finally:
             tmp_path.unlink()
+
+    def test_edit_config_template_included(self) -> None:
+        # Check if the template file exists in the package
+        config_template = resources.files("girsh.templates").joinpath("config_template.yaml")
+        with resources.as_file(config_template) as template_path:
+            self.assertTrue(template_path.exists(), "Template file does not exist in the package.")
+
+            # Read the content of the template file
+            template_content = template_path.read_text()
+            self.assertIsInstance(template_content, str, "Template content is not a string.")
+            self.assertGreater(len(template_content), 0, "Template content is empty.")
+
+            # Check that the content in valid YAML
+            try:
+                yaml.safe_load(template_content)
+            except yaml.YAMLError as e:
+                self.fail(f"Template content is not valid YAML: {e}")
 
     # -------------------------------
     # Tests for get_arguments

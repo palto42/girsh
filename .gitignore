@@ -146,3 +146,5 @@ cython_debug/
 
 # Config file
 config*.yaml
+# Include the config template
+!src/girsh/templates/config_template.yaml
