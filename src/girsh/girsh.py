@@ -92,10 +92,16 @@ def main() -> int:
         return edit_config(args.config)
 
     set_logger_level(args.verbose)
+    logger.debug(f"CLI args: {args}")
 
     general, repositories = load_yaml_config(args.config)
+    if args.proxy:
+        general.proxy = args.proxy
     logger.debug(f"General config: {general}")
     logger.debug(f"Repositories config: {repositories}")
+    if general.proxy:
+        logger.debug(f"Using proxy: {general.proxy}")
+        os.environ["https_proxy"] = general.proxy
 
     if args.clean:
         return clean_downloads_folder(general.download_dir)

@@ -28,6 +28,9 @@ general:
   # If not provided, it defaults to "~/.local/share/girsh" or "/opt/girsh"
   package_base_folder: "/my/Packages"
 
+  # Optional: proxy settings, can be overwritten with `--proxy` command line argument.
+  proxy: proxy.example.com:8080
+
 repositories:
   # Dictionary of git repositories from which the released binary should be installed
   owner/repository-name:
