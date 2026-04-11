@@ -3,7 +3,7 @@
 ![python version](https://img.shields.io/badge/python-3.10+-blue.svg)
 [![PyPI](https://img.shields.io/pypi/v/girsh)](https://pypi.org/project/girsh)
 [![Build status](https://img.shields.io/github/actions/workflow/status/palto42/girsh/main.yml?branch=main)](https://github.com/palto42/girsh/actions/workflows/main.yml?query=branch%3Amain)
-[![codecov](https://codecov.io/gh/palto42/girsh/branch/main/graph/badge.svg)](https://codecov.io/gh/palto42/girsh)
+[![codecov](https://codecov.io/gh/palto42/girsh/graph/badge.svg?token=I0TFAE5539)](https://codecov.io/gh/palto42/girsh)
 [![Commit activity](https://img.shields.io/github/commit-activity/m/palto42/girsh)](https://img.shields.io/github/commit-activity/m/palto42/girsh)
 [![License](https://img.shields.io/github/license/palto42/girsh)](https://img.shields.io/github/license/palto42/girsh)
 
