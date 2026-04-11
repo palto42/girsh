@@ -32,8 +32,10 @@ class DummyResponse:
         self._json = json_data
         self._raise_exc = raise_for_status
         self.headers: dict[str, str] = {}
+        self.status_code: int = 200
 
     def raise_for_status(self) -> None:
+        self.status_code = 400
         if self._raise_exc:
             raise HTTPError("status")
 
