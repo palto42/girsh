@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import requests
+import requests.exceptions
 from loguru import logger
 
 
@@ -60,7 +61,7 @@ def get_filename_from_cd(content_disposition: str | None) -> str | None:
         return filename_match
 
 
-def download_package(download_url: str, output_dir: Path, filename: str | None = None) -> Path | None:
+def download_package(download_url: str, output_dir: Path, filename: str | None = None) -> Path | None:  # noqa: C901 complex-structure
     """
     Downloads a file from the given URL and saves it to the specified output directory.
 
@@ -74,21 +75,40 @@ def download_package(download_url: str, output_dir: Path, filename: str | None =
         Path | None: The path to the downloaded file, or None if the download failed.
     """
     logger.debug(f"Downloading from {download_url}")
-    binary_response = requests.get(download_url, stream=True, allow_redirects=True, timeout=30)
-    if binary_response.ok:
-        filename = filename if filename else get_filename_from_cd(binary_response.headers.get("content-disposition"))
-        output_path = output_dir / (filename if filename else download_url.rsplit("/", 1)[1])
-        if not output_path.is_file():
-            with output_path.open("wb") as f:
-                for chunk in binary_response.iter_content(chunk_size=1024):
-                    if chunk:
-                        f.write(chunk)
-            logger.info(f"Downloaded: {output_path}")
+    try:
+        binary_response = requests.get(download_url, stream=True, allow_redirects=True, timeout=30)
+        if binary_response.ok:
+            filename = (
+                filename if filename else get_filename_from_cd(binary_response.headers.get("content-disposition"))
+            )
+            output_path = output_dir / (filename if filename else download_url.rsplit("/", 1)[1])
+            if not output_path.is_file():
+                with output_path.open("wb") as f:
+                    for chunk in binary_response.iter_content(chunk_size=1024):
+                        if chunk:
+                            f.write(chunk)
+                logger.info(f"Downloaded: {output_path}")
+            else:
+                logger.info(f"Asset already downloaded: {output_path}")
+            return output_path
         else:
-            logger.info(f"Asset already downloaded: {output_path}")
-        return output_path
-    else:
-        logger.error(f"Download of {download_url} failed with status: {HTTPStatus(binary_response.status_code)}")
+            http_status = HTTPStatus(binary_response.status_code)
+            if binary_response.status_code == 407:
+                logger.error(f"Proxy authentication required for {download_url}. Check proxy credentials.")
+            elif binary_response.status_code == 403:
+                logger.error(f"Access denied downloading {download_url}: {http_status.phrase}")
+            else:
+                logger.error(f"Download of {download_url} failed with status: {http_status}")
+    except requests.exceptions.ProxyError as e:
+        logger.error(f"Proxy error downloading {download_url}: {e}. Check proxy configuration.")
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"Connection error downloading {download_url}: {e}")
+    except requests.exceptions.ConnectTimeout as e:
+        logger.error(f"Connection timeout downloading {download_url}: {e}. Check proxy/network.")
+    except requests.exceptions.ReadTimeout as e:
+        logger.error(f"Read timeout downloading {download_url}: {e}")
+    except requests.RequestException as e:
+        logger.error(f"Error downloading {download_url}: {e}")
     return None
 
 

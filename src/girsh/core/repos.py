@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 import requests
+import requests.exceptions
 from loguru import logger
 
 from girsh.core import utils
@@ -86,6 +87,21 @@ def fetch_release_info(repo: str, version: str | None, reinstall: bool) -> dict[
             return release_info
         else:
             logger.error(f"Received unexpected release info data: {release_info}")
+    except requests.exceptions.ProxyError as e:
+        logger.error(f"Proxy error fetching release info for {repo}: {e}. Check proxy configuration.")
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"Connection error fetching release info for {repo}: {e}")
+    except requests.exceptions.ConnectTimeout as e:
+        logger.error(f"Connection timeout fetching release info for {repo}: {e}. Check proxy/network.")
+    except requests.exceptions.ReadTimeout as e:
+        logger.error(f"Read timeout fetching release info for {repo}: {e}")
+    except requests.exceptions.HTTPError as e:
+        if response.status_code == 407:
+            logger.error(f"Proxy authentication required for {repo}. Check proxy credentials.")
+        elif response.status_code == 403:
+            logger.error(f"Access denied fetching release info for {repo}: {response.reason}")
+        else:
+            logger.error(f"HTTP error fetching release info for {repo}: {e}")
     except requests.RequestException as e:
         logger.error(f"Error fetching release info for {repo}: {e}")
     return None

@@ -152,3 +152,124 @@ To clean up temporary downloads:
 ```text
 girsh --clean
 ```
+
+## Using a Proxy for Downloads
+
+If you need to download assets through an HTTP or HTTPS proxy, `girsh` supports proxy configuration both via command-line arguments and configuration files.
+
+### Proxy Format
+
+The proxy URL format is flexible and supports:
+
+- **Scheme**: `http://`, `https://`, `socks4://`, `socks5://` (defaults to `http://` if omitted)
+- **Authentication**: Optional `username:password@` for proxy authentication
+- **Host**: Hostname or IP address (required)
+- **Port**: Optional port number (1-65535, defaults to 80/443 depending on scheme)
+
+### Proxy Configuration Methods
+
+#### 1. Command-line Argument
+
+Use the `-p` or `--proxy` flag:
+
+```text
+girsh --proxy http://proxy.example.com:8080
+```
+
+With authentication:
+
+```text
+girsh --proxy http://user:password@proxy.example.com:3128
+```
+
+#### 2. Configuration File
+
+Add the `proxy` setting under the `general` section in your `~/.config/girsh.yaml`:
+
+```yaml
+general:
+  proxy: http://proxy.example.com:8080
+  # or with authentication:
+  proxy: user:password@proxy.example.com:3128
+  # or without scheme (defaults to http://):
+  proxy: proxy.example.com:8080
+```
+
+#### 3. Supported Proxy Schemes
+
+- **HTTP Proxy**: `http://proxy.example.com:8080` - For both HTTP and HTTPS connections
+- **HTTPS Proxy**: `https://proxy.example.com:8080` - Encrypted connection to proxy
+- **SOCKS4**: `socks4://proxy.example.com:1080` - SOCKS4 protocol
+- **SOCKS5**: `socks5://proxy.example.com:1080` - SOCKS5 protocol
+
+### Proxy Authentication
+
+If your proxy requires authentication, include credentials in the URL:
+
+- **Format**: `scheme://username:password@host:port`
+- **Example**: `http://john:secret@proxy.internal:3128`
+- **Warning**: Credentials in config files are stored in plaintext. Ensure proper file permissions (mode 600).
+
+### Troubleshooting Proxy Issues
+
+#### Proxy Connection Failures
+
+If you see proxy-related errors:
+
+```
+Error fetching release info: Proxy error fetching release info for owner/repo: ...
+```
+
+**Solutions**:
+1. Verify proxy URL is correct: `http://proxy.example.com:8080`
+2. Check proxy port is accessible: Use `telnet proxy.example.com 8080` or equivalent
+3. Ensure no firewall blocks outbound connections to proxy
+4. Check proxy logs for rejected connections
+
+#### Proxy Authentication Errors
+
+If you see authentication errors:
+
+```
+Proxy authentication required. Check proxy credentials.
+```
+
+**Solutions**:
+1. Verify username and password are correct
+2. Check if credentials need URL encoding (special characters)
+3. Test credentials separately against the proxy
+4. Ensure proxy accepts the authentication method
+
+#### Timeout Issues
+
+If downloads timeout through proxy:
+
+```
+Connection timeout downloading ...: ...
+```
+
+**Solutions**:
+1. Increase timeout by checking proxy performance
+2. Try direct connection (disable proxy) to isolate the issue
+3. Check if proxy has bandwidth limits
+4. Verify network path to proxy server
+
+### Example: Corporate Proxy Setup
+
+For a typical corporate environment:
+
+```bash
+# In ~/.config/girsh.yaml
+general:
+  proxy: http://proxy.corp.internal:3128
+
+# Or via command line
+girsh --proxy http://proxy.corp.internal:3128
+```
+
+With authentication:
+
+```bash
+general:
+  proxy: http://username:password@proxy.corp.internal:3128
+```

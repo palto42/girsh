@@ -9,6 +9,7 @@ from importlib.metadata import version
 from pathlib import Path
 from types import UnionType
 from typing import Any, get_args, get_origin
+from urllib.parse import urlparse
 
 import yaml
 from loguru import logger
@@ -32,6 +33,83 @@ def convert_to_bool(value: Any) -> Any:
         raise ValueError
 
 
+def _validate_proxy_host(netloc: str) -> None:
+    """Validate proxy host is valid."""
+    if not netloc:
+        msg = "Proxy URL must include hostname (and optionally port)"
+        raise ValueError(msg)
+
+
+def _validate_proxy_scheme(scheme: str) -> None:
+    """Validate proxy scheme is supported."""
+    valid_schemes = ("http", "https", "socks4", "socks5")
+    if scheme.lower() not in valid_schemes:
+        msg = f"Unsupported proxy scheme '{scheme}'. Supported schemes: {', '.join(valid_schemes)}"
+        raise ValueError(msg)
+
+
+def _validate_proxy_port(port: str) -> None:
+    """Validate proxy port is in valid range."""
+    try:
+        port_num = int(port)
+    except ValueError as e:
+        msg = f"Invalid proxy port: '{port}' is not a valid number"
+        raise ValueError(msg) from e
+    if not (0 < port_num < 65536):
+        msg = f"Port must be between 1 and 65535, got {port_num}"
+        raise ValueError(msg)
+
+
+def validate_proxy_url(proxy: str | None) -> str:
+    """
+    Validate and normalize proxy URL format.
+
+    Args:
+        proxy (str | None): The proxy URL to validate
+
+    Returns:
+        str: The validated and normalized proxy URL
+
+    Raises:
+        ValueError: If proxy URL format is invalid
+    """
+    if proxy is None:
+        msg = "Proxy cannot be None"
+        raise ValueError(msg)
+
+    proxy = proxy.strip()
+    if not proxy:
+        msg = "Proxy URL cannot be empty"
+        raise ValueError(msg)
+
+    # If no scheme provided, assume http://
+    if "://" not in proxy:
+        proxy = f"http://{proxy}"
+
+    try:
+        parsed = urlparse(proxy)
+
+        # Validate scheme
+        _validate_proxy_scheme(parsed.scheme)
+
+        # Validate host
+        _validate_proxy_host(parsed.netloc)
+
+        # Validate host and port components
+        if ":" in parsed.netloc:
+            parts = parsed.netloc.rsplit(":", 1)
+            port = parts[-1]
+            _validate_proxy_port(port)
+
+        logger.debug(f"Proxy URL validated and normalized: {parsed.scheme}://{parsed.netloc}")
+    except ValueError:
+        raise
+    except Exception as e:
+        msg = f"Failed to parse proxy URL '{proxy}': {e}"
+        raise ValueError(msg) from e
+    return proxy
+
+
 @dataclass
 class General:
     bin_base_folder: Path = Path("/usr/local/bin") if os.geteuid() == 0 else Path.home() / ".local/bin"
@@ -44,6 +122,15 @@ class General:
     proxy: str | None = None  # Proxy URL for downloading files
 
     def __setattr__(self, name: str, value: Any) -> None:
+        # Special handling for proxy validation
+        if name == "proxy" and value is not None and value != "":
+            try:
+                value = validate_proxy_url(value)
+            except ValueError as e:
+                logger.error(f"Invalid proxy URL: {e}")
+                msg = f"Proxy validation failed: {e}"
+                raise ValueError(msg) from e
+
         expected_type = self.__annotations__.get(name)
         if expected_type is not None and not isinstance(value, expected_type):
             try:
@@ -255,7 +342,11 @@ def get_arguments() -> argparse.Namespace:
     # Add mutually exclusive group for commands, default command is install/update
     commands = parser.add_mutually_exclusive_group(required=False)
     commands.add_argument(
-        "-r", "--reinstall", nargs="+", metavar="BINARY", help="Force re-installation even if version unchanged"
+        "-r",
+        "--reinstall",
+        nargs="+",
+        metavar="BINARY",
+        help="Force re-installation even if version unchanged",
     )
     commands.add_argument(
         "-u",
@@ -263,10 +354,24 @@ def get_arguments() -> argparse.Namespace:
         action="store_true",
         help="Uninstall previously installed binary if not present in config anymore",
     )
-    commands.add_argument("--uninstall-all", action="store_true", help="Uninstall all previously installed binaries")
+    commands.add_argument(
+        "--uninstall-all",
+        action="store_true",
+        help="Uninstall all previously installed binaries",
+    )
     commands.add_argument("--clean", action="store_true", help="Remove the downloads folder and exit")
-    commands.add_argument("-s", "--show", action="store_true", help="Show config and currently installed binaries")
-    commands.add_argument("-e", "--edit", action="store_true", help="Open the config file in the default editor")
+    commands.add_argument(
+        "-s",
+        "--show",
+        action="store_true",
+        help="Show config and currently installed binaries",
+    )
+    commands.add_argument(
+        "-e",
+        "--edit",
+        action="store_true",
+        help="Open the config file in the default editor",
+    )
 
     parser.add_argument(
         "-c",
@@ -278,10 +383,25 @@ def get_arguments() -> argparse.Namespace:
         help="Path to config file, defaults to ~/.config/girsh.yaml",
     )
     parser.add_argument(
-        "-d", "--dry-run", action="store_true", help="Run without actually installing or removing any files."
+        "-d",
+        "--dry-run",
+        action="store_true",
+        help="Run without actually installing or removing any files.",
     )
     parser.add_argument("-p", "--proxy", type=str, help="Proxy URL for downloading files")
-    parser.add_argument("-v", "--verbose", action="count", default=0, help="Increase output verbosity (up to 3 times)")
-    parser.add_argument("-g", "--global", dest="system", action="store_true", help="Install as root at system level")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help="Increase output verbosity (up to 3 times)",
+    )
+    parser.add_argument(
+        "-g",
+        "--global",
+        dest="system",
+        action="store_true",
+        help="Install as root at system level",
+    )
     parser.add_argument("-V", "--version", action="version", version=f"girsh {__version__}")
     return parser.parse_args()

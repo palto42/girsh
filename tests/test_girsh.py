@@ -336,6 +336,106 @@ class TestMain(unittest.TestCase):
             assert os.environ.get("http_proxy") == "http://proxy.yaml.com:8080"
 
 
+class ProxyValidationTest(unittest.TestCase):
+    """Test proxy URL validation function."""
+
+    def test_valid_proxy_http(self) -> None:
+        """Test valid HTTP proxy URL."""
+        from girsh.core.config import validate_proxy_url
+
+        result = validate_proxy_url("http://proxy.example.com:8080")
+        self.assertEqual(result, "http://proxy.example.com:8080")
+
+    def test_valid_proxy_https(self) -> None:
+        """Test valid HTTPS proxy URL."""
+        from girsh.core.config import validate_proxy_url
+
+        result = validate_proxy_url("https://proxy.example.com:8080")
+        self.assertEqual(result, "https://proxy.example.com:8080")
+
+    def test_valid_proxy_socks5(self) -> None:
+        """Test valid SOCKS5 proxy URL."""
+        from girsh.core.config import validate_proxy_url
+
+        result = validate_proxy_url("socks5://proxy.example.com:1080")
+        self.assertEqual(result, "socks5://proxy.example.com:1080")
+
+    def test_valid_proxy_with_auth(self) -> None:
+        """Test proxy with username and password."""
+        from girsh.core.config import validate_proxy_url
+
+        result = validate_proxy_url("http://user:pass@proxy.example.com:3128")
+        self.assertEqual(result, "http://user:pass@proxy.example.com:3128")
+
+    def test_valid_proxy_no_scheme(self) -> None:
+        """Test proxy without scheme defaults to http://."""
+        from girsh.core.config import validate_proxy_url
+
+        result = validate_proxy_url("proxy.example.com:8080")
+        self.assertEqual(result, "http://proxy.example.com:8080")
+
+    def test_invalid_proxy_empty_string(self) -> None:
+        """Test empty proxy string raises ValueError."""
+        from girsh.core.config import validate_proxy_url
+
+        with self.assertRaises(ValueError) as context:
+            validate_proxy_url("")
+        self.assertIn("empty", str(context.exception).lower())
+
+    def test_invalid_proxy_unsupported_scheme(self) -> None:
+        """Test unsupported proxy scheme raises ValueError."""
+        from girsh.core.config import validate_proxy_url
+
+        with self.assertRaises(ValueError) as context:
+            validate_proxy_url("ftp://proxy.example.com:8080")
+        self.assertIn("unsupported", str(context.exception).lower())
+
+    def test_invalid_proxy_no_host(self) -> None:
+        """Test proxy URL without host raises ValueError."""
+        from girsh.core.config import validate_proxy_url
+
+        with self.assertRaises(ValueError) as context:
+            validate_proxy_url("http://")
+        self.assertIn("hostname", str(context.exception).lower())
+
+    def test_invalid_proxy_port_zero(self) -> None:
+        """Test port zero raises ValueError."""
+        from girsh.core.config import validate_proxy_url
+
+        with self.assertRaises(ValueError) as context:
+            validate_proxy_url("http://proxy.example.com:0")
+        self.assertIn("port", str(context.exception).lower())
+
+    def test_invalid_proxy_port_out_of_range(self) -> None:
+        """Test port out of range raises ValueError."""
+        from girsh.core.config import validate_proxy_url
+
+        with self.assertRaises(ValueError) as context:
+            validate_proxy_url("http://proxy.example.com:99999")
+        self.assertIn("port", str(context.exception).lower())
+
+    def test_invalid_proxy_non_numeric_port(self) -> None:
+        """Test non-numeric port raises ValueError."""
+        from girsh.core.config import validate_proxy_url
+
+        with self.assertRaises(ValueError) as context:
+            validate_proxy_url("http://proxy.example.com:abc")
+        self.assertIn("port", str(context.exception).lower())
+
+    def test_general_config_proxy_validation(self) -> None:
+        """Test that General config validates proxy on assignment."""
+        from girsh.core.config import General
+
+        config = General()
+        # Valid proxy should be accepted
+        config.proxy = "http://proxy.example.com:8080"
+        self.assertEqual(config.proxy, "http://proxy.example.com:8080")
+
+        # Invalid proxy should raise ValueError
+        with self.assertRaises(ValueError):
+            config.proxy = "ftp://invalid:scheme"
+
+
 class ElevatePrivilegesTest(unittest.TestCase):
     @patch("os.geteuid", return_value=0)
     def test_elevate_privileges_already_root(self, mock_geteuid: unittest.mock.Mock) -> None:
