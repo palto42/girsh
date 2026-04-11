@@ -34,7 +34,6 @@ dev = [
   "pre-commit>=2.20.0",
   "tox-uv>=1.11.3",
   "deptry>=0.23.0",
-  "mypy>=0.991",
   "pytest-cov>=4.0.0",
   "ruff>=0.11.5",
   "mkdocs>=1.4.2",
@@ -43,6 +42,7 @@ dev = [
   "types-pyyaml>=6.0.12.20241230",
   "types-requests>=2.32.0.20241016",
   "types-psutil>=6.1.0.20241221",
+  "ty>=0.0.29",
 ]
 
 [tool.setuptools.package-data]

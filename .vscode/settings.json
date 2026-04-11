@@ -1,17 +1,17 @@
 {
-    "cSpell.words": [
-        "deptry",
-        "girsh",
-        "loguru",
-        "mccabe",
-        "psutil",
-        "putenv",
-        "pycodestyle",
-        "pyflakes",
-        "pygrep",
-        "PYPI",
-        "pyupgrade",
-        "testpaths",
-        "tryceratops"
-    ]
+  "cSpell.words": [
+    "deptry",
+    "girsh",
+    "loguru",
+    "mccabe",
+    "psutil",
+    "putenv",
+    "pycodestyle",
+    "pyflakes",
+    "pygrep",
+    "PYPI",
+    "pyupgrade",
+    "testpaths",
+    "tryceratops"
+  ]
 }

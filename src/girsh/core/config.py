@@ -379,6 +379,11 @@ def get_arguments() -> argparse.Namespace:
         action="store_true",
         help="Open the config file in the default editor",
     )
+    commands.add_argument(
+        "--test-proxy",
+        action="store_true",
+        help="Test proxy configuration by making a request",
+    )
 
     parser.add_argument(
         "-c",

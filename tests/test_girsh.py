@@ -29,6 +29,7 @@ class DummyArgs:
     config: str = "dummy_config.yaml"
     system: bool = False
     proxy: str | None = None
+    test_proxy: bool = False
 
 
 # --- Dummy general config class ---
@@ -450,6 +451,62 @@ class ProxyValidationTest(unittest.TestCase):
         # Invalid proxy should raise ValueError
         with self.assertRaises(ValueError):
             config.proxy = "ftp://invalid:scheme"
+
+
+class ProxyTestingTest(unittest.TestCase):
+    """Test proxy testing/validation command."""
+
+    def test_test_proxy_command_no_proxy_configured(self) -> None:
+        """Test --test-proxy command with no proxy configured."""
+        dummy_args = DummyArgs(config="config.yaml", test_proxy=True)
+        general, repos = dummy_load_yaml_config("config.yaml")
+        general.proxy = None  # type: ignore[attr-defined]
+        with (
+            patch("girsh.girsh.get_arguments", return_value=dummy_args),
+            patch("girsh.girsh.load_yaml_config", return_value=(general, repos)),
+            patch("girsh.girsh.logger") as mock_logger,
+        ):
+            ret: int | None = girsh.main()
+            self.assertEqual(ret, 1)
+            mock_logger.error.assert_called_once()
+
+    @patch("girsh.core.utils.requests.head")
+    def test_test_proxy_command_successful(self, mock_head: unittest.mock.Mock) -> None:
+        """Test --test-proxy command with successful proxy."""
+        from girsh.core.utils import test_proxy
+
+        mock_response = unittest.mock.Mock()
+        mock_response.ok = True
+        mock_response.status_code = 200
+        mock_head.return_value = mock_response
+
+        result = test_proxy("http://proxy.example.com:8080")
+        self.assertTrue(result)
+        mock_head.assert_called_once()
+
+    @patch("girsh.core.utils.requests.head")
+    def test_test_proxy_command_proxy_error(self, mock_head: unittest.mock.Mock) -> None:
+        """Test --test-proxy command with proxy error."""
+        import requests.exceptions
+
+        from girsh.core.utils import test_proxy
+
+        mock_head.side_effect = requests.exceptions.ProxyError("Proxy connection failed")
+
+        result = test_proxy("http://proxy.example.com:8080")
+        self.assertFalse(result)
+
+    @patch("girsh.core.utils.requests.head")
+    def test_test_proxy_command_timeout(self, mock_head: unittest.mock.Mock) -> None:
+        """Test --test-proxy command with timeout."""
+        import requests.exceptions
+
+        from girsh.core.utils import test_proxy
+
+        mock_head.side_effect = requests.exceptions.ConnectTimeout("Connection timeout")
+
+        result = test_proxy("http://proxy.example.com:8080")
+        self.assertFalse(result)
 
 
 class ElevatePrivilegesTest(unittest.TestCase):

@@ -74,7 +74,7 @@ class TestGetProcesses(unittest.TestCase):
         dummy1 = DummyProcess("my_prog")
         dummy2 = DummyProcess("other")
         with patch("psutil.process_iter", return_value=[dummy1, dummy2]):
-            processes: list[DummyProcess] = utils.get_processes("my_prog")  # type: ignore[assignment]
+            processes: list[DummyProcess] = utils.get_processes("my_prog")  # ty: ignore[invalid-assignment]
         self.assertEqual(processes, [dummy1])
 
 

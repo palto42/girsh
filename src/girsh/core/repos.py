@@ -174,7 +174,7 @@ def process_repository(
     installed_tag: str | None,
     reinstall: bool = False,
     dry_run: bool = False,
-) -> tuple[RepoResult, dict[str, str]]:
+) -> tuple[RepoResult, dict[str, Any]]:
     """
     Process a single repository by checking for updates, downloading the latest release, extracting,
     optionally renaming the binary, and installing it. Updates the installed with the latest version
@@ -214,7 +214,7 @@ def process_repository(
     if not result:
         return RepoResult.install_failed, {}
 
-    package_path, downloaded_tag = result
+    package_path, _downloaded_tag = result
     repo_name = repo.split("/")[1]
 
     # Extract the package contents

@@ -86,7 +86,7 @@ class TestConfigModule(unittest.TestCase):
 
     def test_general_set_path(self) -> None:
         g: config.General = config.General()
-        g.bin_base_folder = "/dummy/path"  # type: ignore[assignment]
+        g.bin_base_folder = Path("/dummy/path")
         self.assertIsInstance(g.bin_base_folder, Path)
         self.assertEqual(g.bin_base_folder, Path("/dummy/path"))
 
@@ -100,24 +100,24 @@ class TestConfigModule(unittest.TestCase):
         g: config.General = config.General()
         # Should fail because Path-like is expected
         with self.assertRaises(config.ConversionError):
-            g.installed_file = 1.1  # type: ignore[assignment]
+            g.installed_file = 1.1  # ty: ignore[invalid-assignment]
 
     def test_repository_set_str(self) -> None:
         r: config.Repository = config.Repository()
-        r.comment = 123  # type: ignore[assignment] # Should be auto-converted to a string
+        r.comment = 123  # ty: ignore[invalid-assignment] # Should be auto-converted to a string
         self.assertIsInstance(r.comment, str)
         self.assertEqual(r.comment, "123")
 
     def test_repository_set_bool(self) -> None:
         r: config.Repository = config.Repository()
-        r.multi_file = "True"  # type: ignore[assignment] # Should be auto-converted to bool
+        r.multi_file = "True"  # ty: ignore[invalid-assignment]# Should be auto-converted to bool
         self.assertIsInstance(r.multi_file, bool)
         self.assertEqual(r.multi_file, True)
 
     def test_repository_invalid_conversion(self) -> None:
         r: config.Repository = config.Repository()
         with self.assertRaises(config.ConversionError):
-            r.multi_file = "not_a_boolean"  # type: ignore[assignment] # Should raise ConversionError
+            r.multi_file = "not_a_boolean"  # ty: ignore[invalid-assignment] # Should raise ConversionError
 
     # -------------------------------
     # Tests for update_general_config
@@ -274,7 +274,7 @@ invalid:
                     patch("sys.exit", side_effect=SystemExit) as mock_exit,
                 ):
                     with self.assertRaises(SystemExit):
-                        general, repositories = config.load_yaml_config(tmp_file.name)
+                        _general, _repositories = config.load_yaml_config(tmp_file.name)
                     mock_exit.assert_called_once_with(1)
                     mock_logger_error.assert_called_once_with(
                         SubstringMatcher(containing="YAML syntax error in config file")
@@ -302,7 +302,7 @@ extra_config:
                 with (
                     patch.object(logger, "warning") as mock_logger,
                 ):
-                    general, repositories = config.load_yaml_config(tmp_file.name)
+                    _general, _repositories = config.load_yaml_config(tmp_file.name)
                     mock_logger.assert_called_once_with("Config YAML contains unexpected keys: {'extra_config'}")
             finally:
                 Path(tmp_file.name).unlink()

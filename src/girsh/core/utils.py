@@ -2,6 +2,8 @@ import shlex
 import subprocess
 
 import psutil
+import requests
+import requests.exceptions
 from loguru import logger
 
 
@@ -161,3 +163,48 @@ def run_commands(command_list: list[str | None] | None, info: str) -> bool:
                 logger.error(f"Command error message: {cmd_result.stderr}")
                 return False
     return True
+
+
+def test_proxy(proxy_url: str) -> bool:
+    """
+    Test if a proxy is working by making a simple request to GitHub API.
+
+    Args:
+        proxy_url (str): The proxy URL to test (e.g., http://proxy.example.com:8080)
+
+    Returns:
+        bool: True if proxy test succeeded, False otherwise
+    """
+    proxies = {"http": proxy_url, "https": proxy_url}
+    test_url = "https://api.github.com"
+
+    logger.info(f"Testing proxy: {proxy_url}")
+    logger.debug(f"Making request to {test_url} via proxy")
+
+    try:
+        response = requests.head(test_url, proxies=proxies, timeout=10)
+        if response.ok:
+            logger.success(f"✓ Proxy is working! Status: {response.status_code}")
+            return True
+        else:
+            logger.error(f"✗ Proxy request failed with status: {response.status_code}")
+            return False
+    except requests.exceptions.ProxyError as e:
+        logger.error(f"✗ Proxy error: {e}")
+        logger.error("Check proxy configuration and ensure it's accessible")
+        return False
+    except requests.exceptions.ConnectTimeout as e:
+        logger.error(f"✗ Connection timeout: {e}")
+        logger.error("Proxy server may be slow or unreachable")
+        return False
+    except requests.exceptions.ReadTimeout as e:
+        logger.error(f"✗ Read timeout: {e}")
+        logger.error("Proxy server may be slow")
+        return False
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"✗ Connection error: {e}")
+        logger.error("Unable to reach proxy server or target server")
+        return False
+    except requests.RequestException as e:
+        logger.error(f"✗ Request failed: {e}")
+        return False

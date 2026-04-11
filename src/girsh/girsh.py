@@ -66,7 +66,7 @@ def set_logger_level(verbosity: int) -> None:
     )
 
 
-def main() -> int:
+def main() -> int:  # noqa: C901 too complex, but it's the main function and we can live with it for now
     """
     The main entry point for the application.
 
@@ -99,6 +99,18 @@ def main() -> int:
         general.proxy = args.proxy
     logger.debug(f"General config: {general}")
     logger.debug(f"Repositories config: {repositories}")
+
+    if args.test_proxy:
+        # Test proxy without applying it to environment variables
+        if general.proxy:
+            from girsh.core.utils import test_proxy
+
+            success = test_proxy(general.proxy)
+            return 0 if success else 1
+        else:
+            logger.error("No proxy configured. Use -p/--proxy or set proxy in config file.")
+            return 1
+
     if general.proxy:
         logger.debug(f"Using proxy: {general.proxy}")
         os.environ["https_proxy"] = general.proxy
