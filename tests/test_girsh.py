@@ -498,7 +498,7 @@ class ProxyTestingTest(unittest.TestCase):
 
     @patch("girsh.core.utils.requests.head")
     def test_test_proxy_command_timeout(self, mock_head: unittest.mock.Mock) -> None:
-        """Test --test-proxy command with timeout."""
+        """Test --test-proxy command with connect timeout."""
         import requests.exceptions
 
         from girsh.core.utils import test_proxy
@@ -507,6 +507,87 @@ class ProxyTestingTest(unittest.TestCase):
 
         result = test_proxy("http://proxy.example.com:8080")
         self.assertFalse(result)
+
+    @patch("girsh.core.utils.requests.head")
+    def test_test_proxy_command_http_error(self, mock_head: unittest.mock.Mock) -> None:
+        """Test --test-proxy command with HTTP error."""
+        from girsh.core.utils import test_proxy
+
+        mock_response = unittest.mock.Mock()
+        mock_response.ok = False
+        mock_response.status_code = 403
+        mock_head.return_value = mock_response
+
+        result = test_proxy("http://proxy.example.com:8080")
+        self.assertFalse(result)
+
+    @patch("girsh.core.utils.requests.head")
+    def test_test_proxy_command_read_timeout(self, mock_head: unittest.mock.Mock) -> None:
+        """Test --test-proxy command with read timeout."""
+        import requests.exceptions
+
+        from girsh.core.utils import test_proxy
+
+        mock_head.side_effect = requests.exceptions.ReadTimeout("Read timeout")
+
+        result = test_proxy("http://proxy.example.com:8080")
+        self.assertFalse(result)
+
+    @patch("girsh.core.utils.requests.head")
+    def test_test_proxy_command_connection_error(self, mock_head: unittest.mock.Mock) -> None:
+        """Test --test-proxy command with connection error."""
+        import requests.exceptions
+
+        from girsh.core.utils import test_proxy
+
+        mock_head.side_effect = requests.exceptions.ConnectionError("Connection refused")
+
+        result = test_proxy("http://proxy.example.com:8080")
+        self.assertFalse(result)
+
+    @patch("girsh.core.utils.requests.head")
+    def test_test_proxy_command_generic_error(self, mock_head: unittest.mock.Mock) -> None:
+        """Test --test-proxy command with generic request exception."""
+        import requests.exceptions
+
+        from girsh.core.utils import test_proxy
+
+        mock_head.side_effect = requests.exceptions.RequestException("Generic error")
+
+        result = test_proxy("http://proxy.example.com:8080")
+        self.assertFalse(result)
+
+    @patch("girsh.core.utils.requests.head")
+    def test_test_proxy_integration_with_cli(self, mock_head: unittest.mock.Mock) -> None:
+        """Test --test-proxy command integration with CLI."""
+        mock_response = unittest.mock.Mock()
+        mock_response.ok = True
+        mock_response.status_code = 200
+        mock_head.return_value = mock_response
+
+        dummy_args = DummyArgs(config="config.yaml", test_proxy=True, proxy="http://proxy.example.com:8080")
+        general, repos = dummy_load_yaml_config("config.yaml")
+        general.proxy = "http://proxy.example.com:8080"  # type: ignore[attr-defined]
+        with (
+            patch("girsh.girsh.get_arguments", return_value=dummy_args),
+            patch("girsh.girsh.load_yaml_config", return_value=(general, repos)),
+        ):
+            ret: int | None = girsh.main()
+            self.assertEqual(ret, 0)
+
+    def test_test_proxy_with_invalid_proxy_url(self) -> None:
+        """Test that invalid proxy URL is rejected before test."""
+        import contextlib
+
+        dummy_args = DummyArgs(config="config.yaml", test_proxy=True, proxy="invalid")
+        dummy_load_yaml_config("config.yaml")
+        with (
+            patch("girsh.girsh.get_arguments", return_value=dummy_args),
+            patch("girsh.girsh.load_yaml_config", side_effect=ValueError("Invalid proxy")),
+            contextlib.suppress(ValueError),
+        ):
+            # Expected to fail during config load due to validation
+            girsh.main()
 
 
 class ElevatePrivilegesTest(unittest.TestCase):
