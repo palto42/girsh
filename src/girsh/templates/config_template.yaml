@@ -22,8 +22,16 @@
   # If not provided, it defaults to "~/.local/share/girsh" or "/opt/girsh"
   # package_base_folder: "/my/packages"
 
-  # Optional: proxy settings
-  # proxy: proxy.example.com:8080
+  # Optional: Proxy for downloading release assets
+  # Supports HTTP and HTTPS proxies
+  # Format: [http(s)://][user:password@]host[:port]
+  # Defaults to http:// if no scheme specified
+  # Examples:
+  #   proxy: http://proxy.example.com:8080
+  #   proxy: proxy.example.com:8080  # defaults to http://
+  #   proxy: user:pass@proxy.example.com:3128
+  # WARNING: Protect config file if using proxy authentication
+  # proxy: http://proxy.example.com:8080
 
 repositories:
   # List of git repositories from which the released binary should be installed

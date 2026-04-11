@@ -295,6 +295,7 @@ class TestMain(unittest.TestCase):
             mock_save.assert_called()
 
     def test_proxy_argument(self) -> None:
+        """Test that CLI proxy argument overrides config file and sets both HTTP and HTTPS."""
         dummy_args = DummyArgs(config="config.yaml", proxy="http://proxy.example.com:8080")
         # Proxy in yaml config is expected to be overwritten by CLI argument
         general, repos = dummy_load_yaml_config("config.yaml")
@@ -302,28 +303,37 @@ class TestMain(unittest.TestCase):
         with (
             patch("girsh.girsh.get_arguments", return_value=dummy_args),
             patch("girsh.girsh.load_yaml_config", return_value=(general, repos)),
-            patch("girsh.girsh.os.putenv") as mock_putenv,
+            patch.dict("os.environ", {}, clear=False),
             patch("girsh.girsh.process_repositories", return_value=(None, {})),
-            patch("girsh.girsh.load_installed", return_value=({})),
+            patch("girsh.girsh.load_installed", return_value={}),
             patch("girsh.girsh.save_installed"),
         ):
+            import os
+
             girsh.main()
-            mock_putenv.assert_called_once_with(b"https_proxy", b"http://proxy.example.com:8080")
+            # CLI argument should override config file proxy
+            assert os.environ.get("https_proxy") == "http://proxy.example.com:8080"
+            assert os.environ.get("http_proxy") == "http://proxy.example.com:8080"
 
     def test_proxy_config_yaml(self) -> None:
+        """Test that config file proxy is used when CLI argument not provided."""
         dummy_args = DummyArgs(config="config.yaml")
         general, repos = dummy_load_yaml_config("config.yaml")
         general.proxy = "http://proxy.yaml.com:8080"  # type: ignore[attr-defined]
         with (
             patch("girsh.girsh.get_arguments", return_value=dummy_args),
             patch("girsh.girsh.load_yaml_config", return_value=(general, repos)),
-            patch("girsh.girsh.os.putenv") as mock_putenv,
+            patch.dict("os.environ", {}, clear=False),
             patch("girsh.girsh.process_repositories", return_value=(None, {})),
-            patch("girsh.girsh.load_installed", return_value=({})),
+            patch("girsh.girsh.load_installed", return_value={}),
             patch("girsh.girsh.save_installed"),
         ):
+            import os
+
             girsh.main()
-            mock_putenv.assert_called_once_with(b"https_proxy", b"http://proxy.yaml.com:8080")
+            # Config file proxy should be used
+            assert os.environ.get("https_proxy") == "http://proxy.yaml.com:8080"
+            assert os.environ.get("http_proxy") == "http://proxy.yaml.com:8080"
 
 
 class ElevatePrivilegesTest(unittest.TestCase):

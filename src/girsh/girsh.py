@@ -102,6 +102,7 @@ def main() -> int:
     if general.proxy:
         logger.debug(f"Using proxy: {general.proxy}")
         os.environ["https_proxy"] = general.proxy
+        os.environ["http_proxy"] = general.proxy
 
     if args.clean:
         return clean_downloads_folder(general.download_dir)
