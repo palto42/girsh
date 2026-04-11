@@ -12,6 +12,8 @@ from typing import Any, get_args, get_origin
 from urllib.parse import urlparse
 
 import yaml
+import yaml.parser
+import yaml.scanner
 from loguru import logger
 
 __version__ = version("girsh")
@@ -41,8 +43,11 @@ def _validate_proxy_host(netloc: str) -> None:
 
 
 def _validate_proxy_scheme(scheme: str) -> None:
-    """Validate proxy scheme is supported."""
-    valid_schemes = ("http", "https", "socks4", "socks5")
+    """Validate proxy scheme is supported.
+
+    Only HTTP and HTTPS proxies are supported.
+    """
+    valid_schemes = ("http", "https")
     if scheme.lower() not in valid_schemes:
         msg = f"Unsupported proxy scheme '{scheme}'. Supported schemes: {', '.join(valid_schemes)}"
         raise ValueError(msg)
@@ -63,6 +68,8 @@ def _validate_proxy_port(port: str) -> None:
 def validate_proxy_url(proxy: str | None) -> str:
     """
     Validate and normalize proxy URL format.
+
+    Supports HTTP and HTTPS proxies only. Other schemes (SOCKS, FTP, etc.) are not supported.
 
     Args:
         proxy (str | None): The proxy URL to validate

@@ -159,12 +159,12 @@ If you need to download assets through an HTTP or HTTPS proxy, `girsh` supports 
 
 ### Proxy Format
 
-The proxy URL format is flexible and supports:
+The proxy URL format is flexible and supports HTTP and HTTPS proxies:
 
-- **Scheme**: `http://`, `https://`, `socks4://`, `socks5://` (defaults to `http://` if omitted)
+- **Scheme**: `http://` or `https://` (defaults to `http://` if omitted)
 - **Authentication**: Optional `username:password@` for proxy authentication
 - **Host**: Hostname or IP address (required)
-- **Port**: Optional port number (1-65535, defaults to 80/443 depending on scheme)
+- **Port**: Optional port number (1-65535, defaults to 80 for HTTP or 443 for HTTPS)
 
 ### Proxy Configuration Methods
 
@@ -197,10 +197,12 @@ general:
 
 #### 3. Supported Proxy Schemes
 
+Only HTTP and HTTPS proxies are supported:
+
 - **HTTP Proxy**: `http://proxy.example.com:8080` - For both HTTP and HTTPS connections
 - **HTTPS Proxy**: `https://proxy.example.com:8080` - Encrypted connection to proxy
-- **SOCKS4**: `socks4://proxy.example.com:1080` - SOCKS4 protocol
-- **SOCKS5**: `socks5://proxy.example.com:1080` - SOCKS5 protocol
+
+**Note**: SOCKS proxies (SOCKS4/SOCKS5) are not currently supported.
 
 ### Proxy Authentication
 
@@ -216,11 +218,12 @@ If your proxy requires authentication, include credentials in the URL:
 
 If you see proxy-related errors:
 
-```
+```text
 Error fetching release info: Proxy error fetching release info for owner/repo: ...
 ```
 
 **Solutions**:
+
 1. Verify proxy URL is correct: `http://proxy.example.com:8080`
 2. Check proxy port is accessible: Use `telnet proxy.example.com 8080` or equivalent
 3. Ensure no firewall blocks outbound connections to proxy
@@ -230,11 +233,12 @@ Error fetching release info: Proxy error fetching release info for owner/repo: .
 
 If you see authentication errors:
 
-```
+```text
 Proxy authentication required. Check proxy credentials.
 ```
 
 **Solutions**:
+
 1. Verify username and password are correct
 2. Check if credentials need URL encoding (special characters)
 3. Test credentials separately against the proxy
@@ -244,11 +248,12 @@ Proxy authentication required. Check proxy credentials.
 
 If downloads timeout through proxy:
 
-```
+```text
 Connection timeout downloading ...: ...
 ```
 
 **Solutions**:
+
 1. Increase timeout by checking proxy performance
 2. Try direct connection (disable proxy) to isolate the issue
 3. Check if proxy has bandwidth limits

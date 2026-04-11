@@ -1,7 +1,9 @@
+# ty: ignore[unresolved-attribute]
 import contextlib
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
@@ -353,12 +355,12 @@ class ProxyValidationTest(unittest.TestCase):
         result = validate_proxy_url("https://proxy.example.com:8080")
         self.assertEqual(result, "https://proxy.example.com:8080")
 
-    def test_valid_proxy_socks5(self) -> None:
-        """Test valid SOCKS5 proxy URL."""
+    def test_valid_proxy_uppercase_scheme(self) -> None:
+        """Test proxy with uppercase scheme (case-insensitive)."""
         from girsh.core.config import validate_proxy_url
 
-        result = validate_proxy_url("socks5://proxy.example.com:1080")
-        self.assertEqual(result, "socks5://proxy.example.com:1080")
+        result = validate_proxy_url("HTTP://proxy.example.com:8080")
+        self.assertEqual(result, "HTTP://proxy.example.com:8080")
 
     def test_valid_proxy_with_auth(self) -> None:
         """Test proxy with username and password."""
@@ -388,6 +390,20 @@ class ProxyValidationTest(unittest.TestCase):
 
         with self.assertRaises(ValueError) as context:
             validate_proxy_url("ftp://proxy.example.com:8080")
+        self.assertIn("unsupported", str(context.exception).lower())
+
+    def test_invalid_proxy_socks_not_supported(self) -> None:
+        """Test that SOCKS proxies are not supported."""
+        from girsh.core.config import validate_proxy_url
+
+        # SOCKS4 should be rejected
+        with self.assertRaises(ValueError) as context:
+            validate_proxy_url("socks4://proxy.example.com:1080")
+        self.assertIn("unsupported", str(context.exception).lower())
+
+        # SOCKS5 should be rejected
+        with self.assertRaises(ValueError) as context:
+            validate_proxy_url("socks5://proxy.example.com:1080")
         self.assertIn("unsupported", str(context.exception).lower())
 
     def test_invalid_proxy_no_host(self) -> None:
@@ -459,7 +475,7 @@ class ShowSummaryTest(unittest.TestCase):
         install_summary = {DummyRepoResult.result1: 3, DummyRepoResult.result2: 1}
         uninstall_summary = {DummyRepoResult.fail1: 2, DummyRepoResult.fail2: 1}
 
-        girsh.show_summary(install_summary, uninstall_summary)  # type: ignore[arg-type]
+        girsh.show_summary(install_summary, uninstall_summary)  # ty: ignore[invalid-argument-type]
 
         mock_logger.success.assert_any_call("===============================")
         mock_logger.success.assert_any_call("Summary:")
