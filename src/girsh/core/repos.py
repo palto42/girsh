@@ -198,7 +198,7 @@ def process_repository(
     if not result:
         return RepoResult.install_failed, {}
 
-    package_path, downloaded_tag = result
+    package_path, _downloaded_tag = result
     repo_name = repo.split("/")[1]
 
     # Extract the package contents

@@ -12,6 +12,7 @@ nav:
   - Usage: usage.md
   - Config: config.md
   - Modules: modules.md
+  - Changelog: changelog.md
 plugins:
   - search
   - mkdocstrings:

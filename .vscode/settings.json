@@ -1,16 +1,27 @@
 {
-    "cSpell.words": [
-        "deptry",
-        "girsh",
-        "loguru",
-        "mccabe",
-        "psutil",
-        "pycodestyle",
-        "pyflakes",
-        "pygrep",
-        "PYPI",
-        "pyupgrade",
-        "testpaths",
-        "tryceratops"
-    ]
+  "cSpell.words": [
+    "arithmatex",
+    "deptry",
+    "docstrings",
+    "fontawesome",
+    "GHSA",
+    "girsh",
+    "loguru",
+    "mccabe",
+    "netrc",
+    "psutil",
+    "pycodestyle",
+    "pyflakes",
+    "pygrep",
+    "pymdownx",
+    "PYPI",
+    "pyupgrade",
+    "testpaths",
+    "tryceratops"
+  ],
+  "markdownlint.config": {
+    "MD007": {
+      "indent": 4
+    }
+  }
 }

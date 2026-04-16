@@ -65,7 +65,10 @@ class TestProcessRepository(unittest.TestCase):
 
     def test_process_repository_no_release_info(self) -> None:
         with (
-            patch("girsh.core.repos.check_repo_release", return_value=(repos.RepoResult.install_failed, {})),
+            patch(
+                "girsh.core.repos.check_repo_release",
+                return_value=(repos.RepoResult.install_failed, {}),
+            ),
             patch.object(logger, "info") as mock_logger,
         ):
             result, installed = repos.process_repository(
@@ -80,7 +83,10 @@ class TestProcessRepository(unittest.TestCase):
 
     def test_process_repository_no_new_version(self) -> None:
         with (
-            patch("girsh.core.repos.check_repo_release", return_value=(repos.RepoResult.skipped, {})),
+            patch(
+                "girsh.core.repos.check_repo_release",
+                return_value=(repos.RepoResult.skipped, {}),
+            ),
             patch.object(logger, "info") as mock_logger,
         ):
             result, installed = repos.process_repository(
@@ -98,7 +104,10 @@ class TestProcessRepository(unittest.TestCase):
         self.dummy_general_config.package_pattern = "general_test_pattern"
         self.dummy_repositories_config.download_url = "dummy_download"
         with (
-            patch("girsh.core.repos.check_repo_release", return_value=(repos.RepoResult.installed, dummy_release)),
+            patch(
+                "girsh.core.repos.check_repo_release",
+                return_value=(repos.RepoResult.installed, dummy_release),
+            ),
             patch("girsh.core.repos.download_github_release", return_value=None) as mock_download_github_release,
         ):
             result, installed = repos.process_repository(
@@ -121,7 +130,10 @@ class TestProcessRepository(unittest.TestCase):
     def test_process_repository_download_github_release_failed(self) -> None:
         dummy_release = {"tag_name": "v1.0", "url": "dummy"}
         with (
-            patch("girsh.core.repos.check_repo_release", return_value=(repos.RepoResult.installed, dummy_release)),
+            patch(
+                "girsh.core.repos.check_repo_release",
+                return_value=(repos.RepoResult.installed, dummy_release),
+            ),
             patch("girsh.core.repos.download_github_release", return_value=None),
         ):
             result, installed = repos.process_repository(
@@ -137,8 +149,14 @@ class TestProcessRepository(unittest.TestCase):
     def test_process_repository_find_binary_none(self) -> None:
         dummy_release = {"tag_name": "v1.0", "url": "dummy"}
         with (
-            patch("girsh.core.repos.check_repo_release", return_value=(repos.RepoResult.installed, dummy_release)),
-            patch("girsh.core.repos.download_github_release", return_value=(Path("dummy.zip"), "v1.0")),
+            patch(
+                "girsh.core.repos.check_repo_release",
+                return_value=(repos.RepoResult.installed, dummy_release),
+            ),
+            patch(
+                "girsh.core.repos.download_github_release",
+                return_value=(Path("dummy.zip"), "v1.0"),
+            ),
             patch("girsh.core.repos.extract_package"),
             patch("girsh.core.repos.find_binary", return_value=None),
         ):
@@ -155,8 +173,14 @@ class TestProcessRepository(unittest.TestCase):
     def test_process_repository_dry_run(self) -> None:
         dummy_release = {"tag_name": "v1.0", "url": "dummy"}
         with (
-            patch("girsh.core.repos.check_repo_release", return_value=(repos.RepoResult.installed, dummy_release)),
-            patch("girsh.core.repos.download_github_release", return_value=(Path("dummy.zip"), "v1.0")),
+            patch(
+                "girsh.core.repos.check_repo_release",
+                return_value=(repos.RepoResult.installed, dummy_release),
+            ),
+            patch(
+                "girsh.core.repos.download_github_release",
+                return_value=(Path("dummy.zip"), "v1.0"),
+            ),
             patch("girsh.core.repos.extract_package"),
             patch("girsh.core.repos.find_binary", return_value=Path("dummy_binary")),
             patch.object(logger, "info") as mock_logger,
@@ -177,14 +201,23 @@ class TestProcessRepository(unittest.TestCase):
     def test_process_repository_installation_success(self) -> None:
         dummy_release = {"tag_name": "v1.0", "url": "dummy"}
         with (
-            patch("girsh.core.repos.check_repo_release", return_value=(repos.RepoResult.installed, dummy_release)),
-            patch("girsh.core.repos.download_github_release", return_value=(Path("dummy.zip"), "v1.0")),
+            patch(
+                "girsh.core.repos.check_repo_release",
+                return_value=(repos.RepoResult.installed, dummy_release),
+            ),
+            patch(
+                "girsh.core.repos.download_github_release",
+                return_value=(Path("dummy.zip"), "v1.0"),
+            ),
             patch("girsh.core.repos.extract_package"),
             patch("girsh.core.repos.find_binary", return_value=Path("dummy_binary")),
-            patch("girsh.core.repos.copy_to_bin", return_value=Path("dummy_parent/dummy_install")),
+            patch(
+                "girsh.core.repos.copy_to_bin",
+                return_value=Path("dummy_parent/dummy_install"),
+            ),
             patch.object(logger, "info") as mock_logger,
         ):
-            result, installed = repos.process_repository(
+            _result, installed = repos.process_repository(
                 repo="owner/repo",
                 repo_config=self.dummy_repositories_config,
                 general=self.dummy_general_config,
@@ -205,15 +238,24 @@ class TestProcessRepository(unittest.TestCase):
         dummy_package_dir = self.bin_dir / "package"
         self.dummy_repositories_config.multi_file = True
         with (
-            patch("girsh.core.repos.check_repo_release", return_value=(repos.RepoResult.installed, dummy_release)),
-            patch("girsh.core.repos.download_github_release", return_value=(dummy_package, "v1.0")),
+            patch(
+                "girsh.core.repos.check_repo_release",
+                return_value=(repos.RepoResult.installed, dummy_release),
+            ),
+            patch(
+                "girsh.core.repos.download_github_release",
+                return_value=(dummy_package, "v1.0"),
+            ),
             patch("girsh.core.repos.extract_package"),
             patch("girsh.core.repos.find_binary", return_value=Path("dummy_binary")),
-            patch("girsh.core.repos.copy_to_bin", return_value=Path("dummy_parent/dummy_install")),
+            patch(
+                "girsh.core.repos.copy_to_bin",
+                return_value=Path("dummy_parent/dummy_install"),
+            ),
             patch("girsh.core.repos.move_to_packages", return_value=dummy_package_dir),
             patch.object(logger, "info") as mock_logger,
         ):
-            result, installed = repos.process_repository(
+            _result, installed = repos.process_repository(
                 repo="owner/repo",
                 repo_config=self.dummy_repositories_config,
                 general=self.dummy_general_config,
@@ -235,13 +277,16 @@ class TestProcessRepository(unittest.TestCase):
         self.dummy_repositories_config.pre_update_commands = ["echo Pre-update command executed"]
         with (
             patch("girsh.core.repos.check_repo_release", return_value=(42, dummy_release)),
-            patch("girsh.core.repos.download_github_release", return_value=(Path("dummy.zip"), "v1.0")),
+            patch(
+                "girsh.core.repos.download_github_release",
+                return_value=(Path("dummy.zip"), "v1.0"),
+            ),
             patch("girsh.core.repos.extract_package"),
             patch("girsh.core.repos.find_binary", return_value=Path("dummy_binary")),
             patch("girsh.core.utils.run_commands", return_value=False),
             patch.object(logger, "info") as mock_logger,
         ):
-            result, installed = repos.process_repository(
+            result, _installed = repos.process_repository(
                 repo="owner/repo",
                 repo_config=self.dummy_repositories_config,
                 general=self.dummy_general_config,
@@ -256,14 +301,20 @@ class TestProcessRepository(unittest.TestCase):
         self.dummy_repositories_config.post_update_commands = ["echo Pre-update command executed"]
         with (
             patch("girsh.core.repos.check_repo_release", return_value=(42, dummy_release)),
-            patch("girsh.core.repos.download_github_release", return_value=(Path("dummy.zip"), "v1.0")),
+            patch(
+                "girsh.core.repos.download_github_release",
+                return_value=(Path("dummy.zip"), "v1.0"),
+            ),
             patch("girsh.core.repos.extract_package"),
             patch("girsh.core.repos.find_binary", return_value=Path("dummy_binary")),
             patch("girsh.core.utils.run_commands", side_effect=[True, False]),
-            patch("girsh.core.repos.copy_to_bin", return_value=Path("dummy_parent/dummy_install")),
+            patch(
+                "girsh.core.repos.copy_to_bin",
+                return_value=Path("dummy_parent/dummy_install"),
+            ),
             patch.object(logger, "info") as mock_logger,
         ):
-            result, installed = repos.process_repository(
+            result, _installed = repos.process_repository(
                 repo="owner/repo",
                 repo_config=self.dummy_repositories_config,
                 general=self.dummy_general_config,

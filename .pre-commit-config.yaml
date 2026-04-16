@@ -1,22 +1,32 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: "v5.0.0"
+    rev: "v6.0.0"
     hooks:
       - id: check-case-conflict
       - id: check-merge-conflict
       - id: check-toml
       - id: check-yaml
-      # - id: check-json
-      #   exclude: ^.devcontainer/devcontainer.json
-      # - id: pretty-format-json
-      #   exclude: ^.devcontainer/devcontainer.json
-      #   args: [--autofix]
+      - id: check-json
+        exclude: ^.devcontainer/devcontainer.json
+      - id: pretty-format-json
+        exclude: ^.devcontainer/devcontainer.json
+        args: [--autofix, --no-sort-keys]
       - id: end-of-file-fixer
       - id: trailing-whitespace
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.11.5"
+    rev: "v0.15.10"
     hooks:
-      - id: ruff
+      - id: ruff-check
         args: [--exit-non-zero-on-fix]
       - id: ruff-format
+
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    # uv version.
+    rev: 0.11.7
+    hooks:
+      # Update the uv lockfile
+      - id: uv-lock
+        always_run: true
+      - id: uv-audit
+        always_run: true
