@@ -2,7 +2,7 @@
 
 ## Version 0.1.33
 
-- Update packe dependencies to fix security vulnerabilities
+- Update package dependencies to fix security vulnerabilities
     - **requests**: upgraded to **2.33.1**
         - Fixed credential leak via malicious `.netrc` URLs
           (CVE-2024-47081)
