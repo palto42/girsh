@@ -21,7 +21,7 @@ keywords = ['python']
 name = "girsh"
 readme = "README.md"
 requires-python = ">=3.10,<4.0"
-version = "0.1.32"
+version = "0.1.33"
 
 [project.urls]
 Documentation = "https://palto42.github.io/girsh/"

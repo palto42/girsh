@@ -138,7 +138,10 @@ class TestConfigModule(unittest.TestCase):
 
     def test_update_general_config_with_general_and_repositories(self) -> None:
         data: dict[str, Any] = {
-            "general": {"installed_file": "/new/path", "package_pattern": "test_pattern"},
+            "general": {
+                "installed_file": "/new/path",
+                "package_pattern": "test_pattern",
+            },
             "repositories": {"repo1": {"comment": "Test repo", "binary_name": "test_binary"}},
         }
         general = config.update_general_config(self.test_general, data)
@@ -153,7 +156,10 @@ class TestConfigModule(unittest.TestCase):
 
     def test_update_repositories_config_with_data(self) -> None:
         data: dict[str, Any] = {
-            "general": {"installed_file": self.installed_name, "package_pattern": "test_pattern"},
+            "general": {
+                "installed_file": self.installed_name,
+                "package_pattern": "test_pattern",
+            },
             "repositories": {"repo1": {"comment": "Test repo", "binary_name": "test_binary"}},
         }
         repositories = config.update_repositories_config(repo_config={}, data=data, default_pattern="test_pattern")
@@ -240,7 +246,10 @@ class TestConfigModule(unittest.TestCase):
 
     def test_load_yaml_config_file_not_found(self) -> None:
         non_existent: str = "nonexistent_config.yaml"
-        with patch.object(logger, "error") as mock_logger_error, patch("sys.exit", side_effect=SystemExit) as mock_exit:
+        with (
+            patch.object(logger, "error") as mock_logger_error,
+            patch("sys.exit", side_effect=SystemExit) as mock_exit,
+        ):
             with self.assertRaises(SystemExit):
                 config.load_yaml_config(non_existent)
             mock_logger_error.assert_called_once_with(f"Config file '{non_existent}' not found.")
@@ -249,7 +258,10 @@ class TestConfigModule(unittest.TestCase):
     def test_load_yaml_config_permission_error(self) -> None:
         fake_path: str = "fake_config.yaml"
         with (
-            patch("girsh.core.config.Path.open", side_effect=PermissionError("No permission")),
+            patch(
+                "girsh.core.config.Path.open",
+                side_effect=PermissionError("No permission"),
+            ),
             patch.object(logger, "error") as mock_logger_error,
             patch("sys.exit", side_effect=SystemExit) as mock_exit,
         ):
@@ -274,7 +286,7 @@ invalid:
                     patch("sys.exit", side_effect=SystemExit) as mock_exit,
                 ):
                     with self.assertRaises(SystemExit):
-                        general, repositories = config.load_yaml_config(tmp_file.name)
+                        _general, _repositories = config.load_yaml_config(tmp_file.name)
                     mock_exit.assert_called_once_with(1)
                     mock_logger_error.assert_called_once_with(
                         SubstringMatcher(containing="YAML syntax error in config file")
@@ -302,7 +314,7 @@ extra_config:
                 with (
                     patch.object(logger, "warning") as mock_logger,
                 ):
-                    general, repositories = config.load_yaml_config(tmp_file.name)
+                    _general, _repositories = config.load_yaml_config(tmp_file.name)
                     mock_logger.assert_called_once_with("Config YAML contains unexpected keys: {'extra_config'}")
             finally:
                 Path(tmp_file.name).unlink()
@@ -357,7 +369,10 @@ general:
         with tempfile.TemporaryDirectory() as tmpdir:
             config_path: Path = Path(tmpdir) / "nonexistent.yaml"
             # Simulate user input "n" to abort.
-            with patch("builtins.input", return_value="n"), patch.object(logger, "error") as mock_logger_error:
+            with (
+                patch("builtins.input", return_value="n"),
+                patch.object(logger, "error") as mock_logger_error,
+            ):
                 result: int = config.edit_config(config_path)
                 self.assertEqual(result, 0)
                 mock_logger_error.assert_called_once_with("Operation aborted. No file was created.")
@@ -373,7 +388,10 @@ general:
             # Simulate user input "y" and a template from resources.
             with (
                 patch("builtins.input", return_value="y"),
-                patch("girsh.core.config.resources.as_file", return_value=DummyResource(dummy_template)),
+                patch(
+                    "girsh.core.config.resources.as_file",
+                    return_value=DummyResource(dummy_template),
+                ),
                 patch("subprocess.run", return_value=dummy_completed_process),
                 patch.object(logger, "info") as mock_logger_info,
             ):
@@ -451,7 +469,10 @@ general:
             tmp_path: Path = Path(tmp.name)
         try:
             with (
-                patch("subprocess.run", side_effect=subprocess.CalledProcessError(1, "cmd", "error")),
+                patch(
+                    "subprocess.run",
+                    side_effect=subprocess.CalledProcessError(1, "cmd", "error"),
+                ),
                 patch.object(Path, "stat", return_value=type("stat", (), {"st_mtime": 1234})()),
                 patch.object(logger, "error") as mock_logger_error,
             ):
@@ -515,7 +536,11 @@ general:
             "--version",
         ]
         # The --version flag will trigger sys.exit, so we expect a SystemExit.
-        with patch("sys.argv", test_args), patch("argparse._sys.argv", test_args), self.assertRaises(SystemExit):
+        with (
+            patch("sys.argv", test_args),
+            patch("argparse._sys.argv", test_args),
+            self.assertRaises(SystemExit),
+        ):
             config.get_arguments()
 
 
