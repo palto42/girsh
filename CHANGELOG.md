@@ -1,17 +1,39 @@
 # Changelog
 
-## v0.1.33
+## v0.1.34
 
 - New config option and CLI argument to specify a web proxy for the download
 
-## v0.1.32
+## Version 0.1.33
 
-- Add missing config template file
+- Update package dependencies to fix security vulnerabilities
+    - **requests**: upgraded to **2.33.1**
+        - Fixed credential leak via malicious `.netrc` URLs
+          (CVE-2024-47081)
+        - Fixed insecure temporary file reuse in `extract_zipped_paths()`
+          (CVE-2026-25645)
+    - **urllib3**: upgraded to **2.6.3**
+        - Fixed improper handling of highly compressed data in streaming API
+          (CVE-2025-66471)
+        - Fixed decompression-bomb bypass via HTTP redirects
+          (CVE-2026-21441)
+        - Fixed uncontrolled redirects in browser/Node.js environments
+          (CVE-2025-50182)
+        - Fixed unbounded decompression chain vulnerability
+          (CVE-2025-66418)
+        - Fixed redirects not disabled when retries are off
+          (CVE-2025-50181)
+- Added "uv audit" in .pre-commit-config.yaml to always check for known vulnerabilities
+- Fixed some minor ruff checks
 
-## v0.1.31
+## Version 0.1.32
 
-- New feature to run pre/post command in shell
+- Added missing config template to package.
 
-## v0.1.30
+## Version 0.1.31
 
-Initial release published
+- Added pre/post command prefix to run the command in a shell instead of simple command sequence.
+
+## Version 0.1.30
+
+- This is the first public release which provides the functions as described in the docs files.

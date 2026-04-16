@@ -12,6 +12,29 @@
     "PYPI",
     "pyupgrade",
     "testpaths",
+    "tryceratops",
+    "arithmatex",
+    "deptry",
+    "docstrings",
+    "fontawesome",
+    "GHSA",
+    "girsh",
+    "loguru",
+    "mccabe",
+    "netrc",
+    "psutil",
+    "pycodestyle",
+    "pyflakes",
+    "pygrep",
+    "pymdownx",
+    "PYPI",
+    "pyupgrade",
+    "testpaths",
     "tryceratops"
-  ]
+  ],
+  "markdownlint.config": {
+    "MD007": {
+      "indent": 4
+    }
+  }
 }
