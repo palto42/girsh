@@ -13,6 +13,9 @@ It also supports uninstalling previously installed binaries and caching version 
 
 - **Download Releases** -
   Downloads assets from the latest GitHub release based on a regex pattern.
+- **Custom Release Sources** -
+  Supports fetching release information from custom APIs using configurable URLs and regex patterns,
+  enabling installation from non-GitHub hosted repositories.
 - **Extract Archives Securely** -
   Supports native binaries as well as extraction of `.tar.gz`/`.tgz`, `.zip` and `.tar.bz2`/`.bz2` archives
   with simple or pattern based search of the contained binary.
