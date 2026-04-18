@@ -229,6 +229,26 @@ class TestCheckRepoRelease(unittest.TestCase):
         mock_logger.info.assert_called_once_with("dummy: No newer version than v1.0 found, skipping.")
         mock_logger.error.assert_not_called()
 
+    @patch("girsh.core.repos.logger")
+    @patch("girsh.core.repos.fetch_custom_release_info", return_value={"tag_name": "v2.0"})
+    @patch("girsh.core.repos.is_new_version", return_value=repos.RepoResult.updated)
+    def test_check_repo_release_custom_url(
+        self, mock_is_new_version: MagicMock, mock_fetch_custom_release_info: MagicMock, mock_logger: MagicMock
+    ) -> None:
+        from unittest.mock import Mock
+
+        dummy_config = Mock()
+        dummy_config.release_url = "https://example.com/releases"
+        dummy_config.version_pattern = r"v[0-9]+\.[0-9]+"
+        self.assertEqual(
+            repos.check_repo_release(
+                repo="dummy", repo_config=dummy_config, target_version=None, current_version="v1.0", reinstall=False
+            ),
+            (repos.RepoResult.updated, {"tag_name": "v2.0"}),
+        )
+        mock_fetch_custom_release_info.assert_called_once_with("https://example.com/releases", r"v[0-9]+\.[0-9]+")
+        mock_logger.error.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()
