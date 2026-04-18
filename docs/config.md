@@ -44,6 +44,10 @@ repositories:
     binary_name: "my-renamed-binary"
     # Optional: Pin to specific version (git tag)
     version: v0.41.2
+    # Optional: Release URL to fetch the latest release information. If not provided, it defaults to the GitHub API URL for the repository's latest release.
+    release_url: https://update.code.visualstudio.com/api/releases/stable
+    # Optional: Release payload pattern to extract the version from the release URL response
+    version_pattern: ^\["([\d\.]+)"
     # Optional: Flag that the packe is not a single binary
     multi_file: true
     # Optional: Pre-update/uninstall commands
@@ -58,6 +62,22 @@ repositories:
     # Optional: Download URL template using `{version}` as a placeholder for the release tag
     download_url: https://package/download/{version}/linux-x64/stable
 ```
+
+### Custom Release Sources
+
+By default, girsh fetches release information from GitHub's API. However, some projects may host their releases on different platforms or provide custom APIs. You can configure girsh to fetch release information from a custom URL by setting `release_url` and `version_pattern`.
+
+- **`release_url`**: The URL to fetch release information from. This should return a response (typically JSON or plain text) containing version information.
+- **`version_pattern`**: A regular expression pattern to extract version strings from the response. The pattern should capture the version in a group. girsh will sort the matched versions lexicographically and select the latest one.
+
+Example for a custom API that returns a JSON array of versions:
+
+```yaml
+release_url: https://api.example.com/releases
+version_pattern: "([0-9]+\.[0-9]+\.[0-9]+)"
+```
+
+When both `release_url` and `version_pattern` are provided, girsh will use these instead of the GitHub API to determine the latest version.
 
 ### Commands
 
@@ -100,15 +120,15 @@ The string after the macro command name is passed to the macro function and must
 If the macro returns `False`, the command execution and further processing of the related repository is cancelled with an error.
 
 - **Supported macros:**
-  - `%confirm_default_yes%`
-    - Prompts the user with a yes/no question and returns True if the user doesn't explicitly answers "n" (no).
-    - Argument: Question string.
-    - Example: `%confirm_default_yes% Install program?`
-  - `%confirm_default_no%`
-    - Prompts the user with a yes/no question and returns True if the user explicitly answers "y" (yes).
-    - Argument: Question string.
-    - Example: `%confirm_default_no% Kill program?`
-  - `%stop_processes%`
-    - Terminate all running processes for of given program.
-    - Argument: program name
-    - Example: `%stop_processes% my_program`
+    - `%confirm_default_yes%`
+        - Prompts the user with a yes/no question and returns True if the user doesn't explicitly answers "n" (no).
+        - Argument: Question string.
+        - Example: `%confirm_default_yes% Install program?`
+    - `%confirm_default_no%`
+        - Prompts the user with a yes/no question and returns True if the user explicitly answers "y" (yes).
+        - Argument: Question string.
+        - Example: `%confirm_default_no% Kill program?`
+    - `%stop_processes%`
+        - Terminate all running processes for of given program.
+        - Argument: program name
+        - Example: `%stop_processes% my_program`
