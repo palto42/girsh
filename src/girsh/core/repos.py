@@ -94,17 +94,24 @@ def fetch_release_info(repo: str, version: str | None, reinstall: bool) -> dict[
     return None
 
 
-def fetch_custom_release_info(release_url: str, version_pattern: str) -> dict[str, str] | None:
+def fetch_custom_release_info(
+    release_url: str, version_pattern: str, target_version: str | None = None
+) -> dict[str, str] | None:
     """
     Fetch release information from a custom URL and extract the latest version using a regex pattern.
 
     Args:
         release_url (str): The URL to fetch release information from.
         version_pattern (str): A regex pattern to extract version strings from the response.
+        target_version (str | None): Specific version to use instead of fetching.
 
     Returns:
         dict | None: A dictionary with 'tag_name' set to the latest extracted version, or None if failed.
     """
+    if target_version is not None:
+        logger.debug(f"Using specified target version '{target_version}' for custom release")
+        return {"tag_name": target_version}
+
     try:
         response = requests.get(release_url, timeout=10)
         response.raise_for_status()
@@ -173,7 +180,7 @@ def check_repo_release(
     """
     # Fetch the release information
     if repo_config.release_url and repo_config.version_pattern:
-        release_info = fetch_custom_release_info(repo_config.release_url, repo_config.version_pattern)
+        release_info = fetch_custom_release_info(repo_config.release_url, repo_config.version_pattern, target_version)
     else:
         release_info = fetch_release_info(repo, target_version, reinstall)
     logger.debug(
