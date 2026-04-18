@@ -247,6 +247,31 @@ class TestConfigModule(unittest.TestCase):
             finally:
                 Path(tmp_file.name).unlink()
 
+    def test_load_yaml_config_with_release_url_and_version_pattern(self) -> None:
+        with tempfile.NamedTemporaryFile("w+", delete=False) as tmp_file:
+            try:
+                config_data: dict[str, Any] = {
+                    "general": {"installed_file": self.installed_name},
+                    "repositories": {
+                        "repo2": {
+                            "comment": "Another repo",
+                            "release_url": "https://example.com/releases",
+                            "version_pattern": r"v[0-9]+\.[0-9]+",
+                        }
+                    },
+                }
+                tmp_file.write(yaml.safe_dump(config_data))
+                tmp_file.close()
+
+                general, repositories = config.load_yaml_config(tmp_file.name)
+                self.assertEqual(general.installed_file, Path(self.installed_name))
+                self.assertIn("repo2", repositories)
+                repo = repositories["repo2"]
+                self.assertEqual(repo.release_url, "https://example.com/releases")
+                self.assertEqual(repo.version_pattern, r"v[0-9]+\.[0-9]+")
+            finally:
+                Path(tmp_file.name).unlink()
+
     def test_load_yaml_config_no_data(self) -> None:
         # Create a temporary file with YAML that is not a dict.
         with tempfile.NamedTemporaryFile("w+", delete=False) as tmp_file:

@@ -28,10 +28,11 @@ class SubstringMatcher:
 # Dummy classes used for testing
 # -------------------------------
 class DummyResponse:
-    def __init__(self, json_data: Any, raise_for_status: bool = False) -> None:
+    def __init__(self, json_data: Any = None, raise_for_status: bool = False, text: str | None = None) -> None:
         self._json = json_data
         self._raise_exc = raise_for_status
         self.headers: dict[str, str] = {}
+        self.text: str = text if text is not None else ""
 
     def raise_for_status(self) -> None:
         if self._raise_exc:
@@ -95,6 +96,52 @@ class TestFetchReleaseInfo(unittest.TestCase):
                 self.repo_version,
                 False,
             )
+            mock_logger_error.assert_called_once_with(SubstringMatcher(containing="error"))
+        self.assertIsNone(info)
+
+
+# -------------------------------
+# Tests for fetch_custom_release_info
+# -------------------------------
+class TestFetchCustomReleaseInfo(unittest.TestCase):
+    def setUp(self) -> None:
+        logger.remove()
+
+    def test_fetch_custom_release_info_valid(self) -> None:
+        response_text = '["v1.0", "v2.0", "v1.10"]'
+        with patch("requests.get", return_value=DummyResponse(text=response_text)):
+            info = repos.fetch_custom_release_info("https://example.com/releases", r"v[0-9]+\.[0-9]+")
+        self.assertEqual(info, {"tag_name": "v2.0"})
+
+    def test_fetch_custom_release_info_no_matches(self) -> None:
+        response_text = "no versions here"
+        with (
+            patch("requests.get", return_value=DummyResponse(text=response_text)),
+            patch.object(repos.logger, "error") as mock_logger_error,
+        ):
+            info = repos.fetch_custom_release_info("https://example.com/releases", r"v[0-9]+\.[0-9]+")
+            mock_logger_error.assert_called_once_with(
+                r"No versions found matching pattern 'v[0-9]+\.[0-9]+' in response from https://example.com/releases"
+            )
+        self.assertIsNone(info)
+
+    def test_fetch_custom_release_info_invalid_regex(self) -> None:
+        response_text = "v1.0"
+        with (
+            patch("requests.get", return_value=DummyResponse(text=response_text)),
+            patch.object(repos.logger, "error") as mock_logger_error,
+        ):
+            info = repos.fetch_custom_release_info("https://example.com/releases", r"v([0-9]+\.[0-9]+")
+            mock_logger_error.assert_called_once()
+            self.assertTrue(str(mock_logger_error.call_args[0][0]).startswith("Invalid regex pattern"))
+        self.assertIsNone(info)
+
+    def test_fetch_custom_release_info_request_exception(self) -> None:
+        with (
+            patch("requests.get", side_effect=RequestException("error")),
+            patch.object(repos.logger, "error") as mock_logger_error,
+        ):
+            info = repos.fetch_custom_release_info("https://example.com/releases", r"v[0-9]+\.[0-9]+")
             mock_logger_error.assert_called_once_with(SubstringMatcher(containing="error"))
         self.assertIsNone(info)
 
