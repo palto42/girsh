@@ -122,7 +122,11 @@ def main() -> int:
     )
 
     installed, summary = process_repositories(
-        repositories, general, installed, reinstall=reinstall_repos, dry_run=args.dry_run
+        repositories,  # ty:ignore[invalid-argument-type]
+        general,
+        installed,
+        reinstall=reinstall_repos,
+        dry_run=args.dry_run,
     )
 
     show_summary(summary, uninstall_summary)

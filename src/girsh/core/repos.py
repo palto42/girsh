@@ -1,3 +1,4 @@
+import re
 import shutil
 from collections import defaultdict
 from collections.abc import Mapping
@@ -54,6 +55,8 @@ class RepositoryConfig(Protocol):
     multi_file: bool
     pre_update_commands: list[str | None] | None
     post_update_commands: list[str | None] | None
+    release_url: str | None
+    version_pattern: str | None
 
 
 def fetch_release_info(repo: str, version: str | None, reinstall: bool) -> dict[Any, Any] | None:
@@ -91,6 +94,38 @@ def fetch_release_info(repo: str, version: str | None, reinstall: bool) -> dict[
     return None
 
 
+def fetch_custom_release_info(release_url: str, version_pattern: str) -> dict[str, str] | None:
+    """
+    Fetch release information from a custom URL and extract the latest version using a regex pattern.
+
+    Args:
+        release_url (str): The URL to fetch release information from.
+        version_pattern (str): A regex pattern to extract version strings from the response.
+
+    Returns:
+        dict | None: A dictionary with 'tag_name' set to the latest extracted version, or None if failed.
+    """
+    try:
+        response = requests.get(release_url, timeout=10)
+        response.raise_for_status()
+        text: str = response.text
+        matches: list[str] = re.findall(version_pattern, text)
+        if matches:
+            # Sort matches lexicographically and pick the last (assuming latest)
+            latest: str = sorted(matches)[-1]
+            logger.debug(f"Extracted version '{latest}' from custom release info at {release_url}")
+            return {"tag_name": latest}
+        else:
+            logger.error(f"No versions found matching pattern '{version_pattern}' in response from {release_url}")
+            return None
+    except requests.RequestException as e:
+        logger.error(f"Error fetching release info from {release_url}: {e}")
+        return None
+    except re.error as e:
+        logger.error(f"Invalid regex pattern '{version_pattern}': {e}")
+        return None
+
+
 def is_new_version(installed_tag: str | None, tag: str, reinstall: bool) -> RepoResult:
     """
     Determine if the current version is different from the installed version or if a reinstall is forced.
@@ -111,28 +146,36 @@ def is_new_version(installed_tag: str | None, tag: str, reinstall: bool) -> Repo
 
 
 def check_repo_release(
-    repo: str, target_version: str | None, current_version: str | None, reinstall: bool
+    repo: str,
+    repo_config: RepositoryConfig,
+    target_version: str | None,
+    current_version: str | None,
+    reinstall: bool,
 ) -> tuple[RepoResult, dict[Any, Any]]:
     """
     Check the release information of a repository and determine the appropriate action.
 
-    This function fetches release information for a given repository from GitHub,
+    This function fetches release information for a given repository from GitHub or a custom URL,
     checks if a new version is available, and determines whether to skip, reinstall,
     or proceed with the release.
 
     Args:
         repo (str): The name of the repository to check.
+        repo_config (RepositoryConfig): The repository configuration.
         target_version (str | None): The target version to check for. If None, the latest version is used.
         current_version (str | None): The currently installed version. If None, it assumes no version is installed.
         reinstall (bool): Whether to force reinstallation even if the current version matches the target version.
 
     Returns:
-        RepoResult | dict[Any, Any]:
+        tuple[RepoResult, dict[Any, Any]]:
             - A dictionary containing release information if a new version is available or reinstall is forced.
             - A RepoResult enum value indicating the action taken (e.g., skipped or install_failed).
     """
-    # Fetch the release information from GitHub
-    release_info = fetch_release_info(repo, target_version, reinstall)
+    # Fetch the release information
+    if repo_config.release_url and repo_config.version_pattern:
+        release_info = fetch_custom_release_info(repo_config.release_url, repo_config.version_pattern)
+    else:
+        release_info = fetch_release_info(repo, target_version, reinstall)
     logger.debug(
         f"Received release info url: {release_info.get('url') if isinstance(release_info, dict) else release_info}"
     )
@@ -179,13 +222,14 @@ def process_repository(
 
     action, release_info = check_repo_release(
         repo=repo,
+        repo_config=repo_config,
         target_version=repo_config.version,
         current_version=installed_tag,
         reinstall=reinstall,
     )
     if not release_info:
         return action, {}
-    tag = release_info.get("tag_name", "unknown")
+    tag: str = release_info.get("tag_name", "unknown")
 
     # Download the release package
     result = download_github_release(
@@ -231,7 +275,9 @@ def process_repository(
         )
     else:
         install_path = copy_to_bin(
-            binary_path=binary_path, bin_base_folder=general.bin_base_folder, binary_name=repo_config.binary_name
+            binary_path=binary_path,
+            bin_base_folder=general.bin_base_folder,
+            binary_name=repo_config.binary_name,
         )
     logger.info(f"{repo}: Installed {install_path.name} version {tag} to {install_path.parent}")
 
@@ -250,9 +296,9 @@ def process_repository(
 
     # Run post-update commands
     if not utils.run_commands(repo_config.post_update_commands, "repo: post-update"):
-        return RepoResult.post_commands_failed, install_data
+        return RepoResult.post_commands_failed, install_data  # ty: ignore[invalid-return-type]
 
-    return action, install_data
+    return action, install_data  # ty: ignore[invalid-return-type]
 
 
 def process_repositories(
@@ -297,7 +343,12 @@ def process_repositories(
             continue
         current_version = installed.get(repo, {}).get("tag")
         result, install_data = process_repository(
-            repo, repo_config, general, current_version, reinstall=repo in reinstall, dry_run=dry_run
+            repo,
+            repo_config,
+            general,
+            current_version,
+            reinstall=repo in reinstall,
+            dry_run=dry_run,
         )
         summary[result] += 1
         if result == RepoResult.updated:

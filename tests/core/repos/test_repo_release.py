@@ -130,8 +130,15 @@ class TestCheckRepoRelease(unittest.TestCase):
     def test_check_repo_release_no_release_info(
         self, mock_fetch_release_info: MagicMock, mock_logger: MagicMock
     ) -> None:
+        from unittest.mock import Mock
+
+        dummy_config = Mock()
+        dummy_config.release_url = None
+        dummy_config.version_pattern = None
         self.assertEqual(
-            repos.check_repo_release(repo="dummy", target_version=None, current_version=None, reinstall=False),
+            repos.check_repo_release(
+                repo="dummy", repo_config=dummy_config, target_version=None, current_version=None, reinstall=False
+            ),
             (repos.RepoResult.install_failed, {}),
         )
         mock_logger.error.assert_called_once_with("No valid release info received")
@@ -142,8 +149,15 @@ class TestCheckRepoRelease(unittest.TestCase):
     def test_check_repo_release_new_version(
         self, mock_is_new_version: MagicMock, mock_fetch_release_info: MagicMock, mock_logger: MagicMock
     ) -> None:
+        from unittest.mock import Mock
+
+        dummy_config = Mock()
+        dummy_config.release_url = None
+        dummy_config.version_pattern = None
         self.assertEqual(
-            repos.check_repo_release(repo="dummy", target_version=None, current_version=None, reinstall=False),
+            repos.check_repo_release(
+                repo="dummy", repo_config=dummy_config, target_version=None, current_version=None, reinstall=False
+            ),
             (repos.RepoResult.installed, {"tag_name": "v1.0"}),
         )
         mock_logger.error.assert_not_called()
@@ -154,8 +168,15 @@ class TestCheckRepoRelease(unittest.TestCase):
     def test_check_repo_release_skipped(
         self, mock_is_new_version: MagicMock, mock_fetch_release_info: MagicMock, mock_logger: MagicMock
     ) -> None:
+        from unittest.mock import Mock
+
+        dummy_config = Mock()
+        dummy_config.release_url = None
+        dummy_config.version_pattern = None
         self.assertEqual(
-            repos.check_repo_release(repo="dummy", target_version=None, current_version=None, reinstall=False),
+            repos.check_repo_release(
+                repo="dummy", repo_config=dummy_config, target_version=None, current_version=None, reinstall=False
+            ),
             (repos.RepoResult.skipped, {}),
         )
         mock_logger.info.assert_called_once_with("dummy: No newer version than v1.0 found, skipping.")

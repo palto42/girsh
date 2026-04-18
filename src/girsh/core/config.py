@@ -61,6 +61,8 @@ class Repository:
     multi_file: bool = False  # Package requires all package files (not single binary)
     version: str | None = None  # Pin program to defined version
     download_url: str | None = None  # Optional download URL template, can contain `{version}` as a variable
+    release_url: str | None = None  # Optional URL to fetch the release metadata from instead of GitHub API
+    version_pattern: str | None = None  # Regex to extract the latest version from the release metadata response
     pre_update_commands: list[str | None] | None = None  # Command to run before updating the package
     post_update_commands: list[str | None] | None = None  # Command to run after updating the package
 
@@ -172,7 +174,7 @@ def load_yaml_config(file_path: str) -> tuple[General, dict[str, Repository]]:
     except PermissionError:
         logger.error(f"Permission denied when reading config file '{file_path}'.")
         sys.exit(1)
-    except (yaml.scanner.ScannerError, yaml.parser.ParserError) as err:
+    except (yaml.scanner.ScannerError, yaml.parser.ParserError) as err:  # ty:ignore[possibly-missing-submodule]
         logger.error(f"YAML syntax error in config file '{file_path}': {err}")
         sys.exit(1)
 
@@ -254,7 +256,11 @@ def get_arguments() -> argparse.Namespace:
     # Add mutually exclusive group for commands, default command is install/update
     commands = parser.add_mutually_exclusive_group(required=False)
     commands.add_argument(
-        "-r", "--reinstall", nargs="+", metavar="BINARY", help="Force re-installation even if version unchanged"
+        "-r",
+        "--reinstall",
+        nargs="+",
+        metavar="BINARY",
+        help="Force re-installation even if version unchanged",
     )
     commands.add_argument(
         "-u",
@@ -262,10 +268,24 @@ def get_arguments() -> argparse.Namespace:
         action="store_true",
         help="Uninstall previously installed binary if not present in config anymore",
     )
-    commands.add_argument("--uninstall-all", action="store_true", help="Uninstall all previously installed binaries")
+    commands.add_argument(
+        "--uninstall-all",
+        action="store_true",
+        help="Uninstall all previously installed binaries",
+    )
     commands.add_argument("--clean", action="store_true", help="Remove the downloads folder and exit")
-    commands.add_argument("-s", "--show", action="store_true", help="Show config and currently installed binaries")
-    commands.add_argument("-e", "--edit", action="store_true", help="Open the config file in the default editor")
+    commands.add_argument(
+        "-s",
+        "--show",
+        action="store_true",
+        help="Show config and currently installed binaries",
+    )
+    commands.add_argument(
+        "-e",
+        "--edit",
+        action="store_true",
+        help="Open the config file in the default editor",
+    )
 
     parser.add_argument(
         "-c",
@@ -277,9 +297,24 @@ def get_arguments() -> argparse.Namespace:
         help="Path to config file, defaults to ~/.config/girsh.yaml",
     )
     parser.add_argument(
-        "-d", "--dry-run", action="store_true", help="Run without actually installing or removing any files."
+        "-d",
+        "--dry-run",
+        action="store_true",
+        help="Run without actually installing or removing any files.",
     )
-    parser.add_argument("-v", "--verbose", action="count", default=0, help="Increase output verbosity (up to 3 times)")
-    parser.add_argument("-g", "--global", dest="system", action="store_true", help="Install as root at system level")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help="Increase output verbosity (up to 3 times)",
+    )
+    parser.add_argument(
+        "-g",
+        "--global",
+        dest="system",
+        action="store_true",
+        help="Install as root at system level",
+    )
     parser.add_argument("-V", "--version", action="version", version=f"girsh {__version__}")
     return parser.parse_args()
