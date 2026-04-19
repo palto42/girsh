@@ -92,12 +92,12 @@ def fetch_release_info(repo: str, version: str | None, reinstall: bool) -> dict[
             logger.error(f"Received unexpected release info data: {release_info}")
     except requests.exceptions.ProxyError as e:
         logger.error(f"Proxy error fetching release info for {repo}: {e}. Check proxy configuration.")
-    except requests.exceptions.ConnectionError as e:
-        logger.error(f"Connection error fetching release info for {repo}: {e}")
     except requests.exceptions.ConnectTimeout as e:
         logger.error(f"Connection timeout fetching release info for {repo}: {e}. Check proxy/network.")
     except requests.exceptions.ReadTimeout as e:
         logger.error(f"Read timeout fetching release info for {repo}: {e}")
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"Connection error fetching release info for {repo}: {e}")
     except requests.exceptions.HTTPError as e:
         if response.status_code == 407:
             logger.error(f"Proxy authentication required for {repo}. Check proxy credentials.")

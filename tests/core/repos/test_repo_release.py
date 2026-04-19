@@ -88,6 +88,76 @@ class TestFetchReleaseInfo(unittest.TestCase):
             mock_logger_error.assert_called_once_with(SubstringMatcher(containing="status"))
         self.assertIsNone(info)
 
+    def test_fetch_release_info_network_exceptions(self) -> None:
+        import requests.exceptions
+
+        exception_cases = [
+            (
+                requests.exceptions.ProxyError("Proxy connection failed"),
+                "Proxy error fetching release info for owner/repo: Proxy connection failed",
+            ),
+            (
+                requests.exceptions.ConnectionError("Connection error"),
+                "Connection error fetching release info for owner/repo: Connection error",
+            ),
+            (
+                requests.exceptions.ConnectTimeout("Connection timeout"),
+                "Connection timeout fetching release info for owner/repo: Connection timeout. Check proxy/network.",
+            ),
+            (
+                requests.exceptions.ReadTimeout("Read timeout"),
+                "Read timeout fetching release info for owner/repo: Read timeout",
+            ),
+        ]
+
+        for exc, expected_message in exception_cases:
+            with self.subTest(exception=type(exc).__name__):
+                with (
+                    patch("requests.get", side_effect=exc),
+                    patch.object(logger, "error") as mock_logger_error,
+                ):
+                    info: dict[Any, Any] | None = repos.fetch_release_info(
+                        "owner/repo",
+                        self.repo_version,
+                        False,
+                    )
+                mock_logger_error.assert_called_once_with(SubstringMatcher(containing=expected_message))
+                self.assertIsNone(info)
+
+    def test_fetch_release_info_http_error_status_codes(self) -> None:
+        class DummyHTTPErrorResponse:
+            def __init__(self, status_code: int, reason: str) -> None:
+                self.status_code = status_code
+                self.reason = reason
+                self.headers: dict[str, str] = {}
+                self.text = ""
+
+            def raise_for_status(self) -> None:
+                raise HTTPError("status", response=self)
+
+            def json(self) -> Any:
+                raise AssertionError("json() should not be called for HTTP error responses")  # noqa: TRY003
+
+        error_cases = [
+            (407, "Proxy authentication required for owner/repo. Check proxy credentials."),
+            (403, "Access denied fetching release info for owner/repo: Forbidden"),
+        ]
+
+        for status_code, expected_message in error_cases:
+            with self.subTest(status_code=status_code):
+                response = DummyHTTPErrorResponse(status_code=status_code, reason="Forbidden")
+                with (
+                    patch("requests.get", return_value=response),
+                    patch.object(logger, "error") as mock_logger_error,
+                ):
+                    info: dict[Any, Any] | None = repos.fetch_release_info(
+                        "owner/repo",
+                        self.repo_version,
+                        False,
+                    )
+                mock_logger_error.assert_called_once_with(SubstringMatcher(containing=expected_message))
+                self.assertIsNone(info)
+
     def test_fetch_release_info_general_exception(self) -> None:
         with (
             patch("requests.get", side_effect=RequestException("error")),

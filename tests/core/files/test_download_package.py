@@ -54,6 +54,57 @@ class DownloadPackageTest(unittest.TestCase):
             files.download_package(download_url, self.output_dir)
             mock_logger.assert_called_once_with(f"Download of {download_url} failed with status: {HTTPStatus(401)}")
 
+    def test_download_package_error_handling(self) -> None:
+        import requests
+
+        download_url = "http://example.com/file"
+
+        # Test cases for HTTP status code errors
+        status_error_cases = [
+            (407, f"Proxy authentication required for {download_url}. Check proxy credentials."),
+            (403, f"Access denied downloading {download_url}: {HTTPStatus(403).phrase}"),
+        ]
+
+        for status_code, expected_message in status_error_cases:
+            with self.subTest(status_code=status_code):
+                fake_response = FakeResponse({}, [b"chunk"], status_code=status_code)
+                with patch("requests.get", return_value=fake_response), patch.object(logger, "error") as mock_logger:
+                    files.download_package(download_url, self.output_dir)
+                    mock_logger.assert_called_once_with(expected_message)
+
+        # Test cases for exception errors
+        exception_error_cases = [
+            (
+                requests.exceptions.ProxyError("Proxy connection failed"),
+                f"Proxy error downloading {download_url}: Proxy connection failed. Check proxy configuration.",
+            ),
+            (
+                requests.exceptions.ConnectionError("Connection refused"),
+                f"Connection error downloading {download_url}: Connection refused",
+            ),
+            (
+                requests.exceptions.ConnectTimeout("Connection timeout"),
+                f"Connection timeout downloading {download_url}: Connection timeout. Check proxy/network.",
+            ),
+            (
+                requests.exceptions.ReadTimeout("Read timeout"),
+                f"Read timeout downloading {download_url}: Read timeout",
+            ),
+            (
+                requests.exceptions.RequestException("Generic error"),
+                f"Error downloading {download_url}: Generic error",
+            ),
+        ]
+
+        for exc, expected_message in exception_error_cases:
+            with (
+                self.subTest(exception=type(exc).__name__),
+                patch("requests.get", side_effect=exc),
+                patch.object(logger, "error") as mock_logger,
+            ):
+                files.download_package(download_url, self.output_dir)
+                mock_logger.assert_called_once_with(expected_message)
+
     def test_download_package_with_filename(self) -> None:
         with patch("requests.get", side_effect=fake_requests_get_success):
             result = files.download_package("http://example.com/file", self.output_dir, "explicit.txt")

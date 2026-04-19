@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+from loguru import logger
+
 # Import the module under test as specified.
 from girsh import girsh
 
@@ -370,6 +372,13 @@ class ProxyValidationTest(unittest.TestCase):
         result = validate_proxy_url("http://user:pass@proxy.example.com:3128")
         self.assertEqual(result, "http://user:pass@proxy.example.com:3128")
 
+    def test_valid_proxy_no_port(self) -> None:
+        """Test proxy URL without explicit port."""
+        from girsh.core.config import validate_proxy_url
+
+        result = validate_proxy_url("http://proxy.example.com")
+        self.assertEqual(result, "http://proxy.example.com")
+
     def test_valid_proxy_no_scheme(self) -> None:
         """Test proxy without scheme defaults to http://."""
         from girsh.core.config import validate_proxy_url
@@ -384,6 +393,39 @@ class ProxyValidationTest(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             validate_proxy_url("")
         self.assertIn("empty", str(context.exception).lower())
+
+    def test_invalid_proxy_none(self) -> None:
+        """Test None proxy raises ValueError."""
+        from girsh.core.config import validate_proxy_url
+
+        with self.assertRaises(ValueError) as context:
+            validate_proxy_url(None)
+        self.assertIn("proxy cannot be none", str(context.exception).lower())
+
+    def test_validate_proxy_with_port_logs_debug(self) -> None:
+        """Test proxy with port is validated and logs the normalized URL."""
+        from girsh.core.config import validate_proxy_url
+
+        with patch.object(logger, "debug") as mock_logger_debug:
+            result = validate_proxy_url("proxy.example.com:8080")
+            self.assertEqual(result, "http://proxy.example.com:8080")
+            mock_logger_debug.assert_called_once_with(
+                "Proxy URL validated and normalized: http://proxy.example.com:8080"
+            )
+
+    def test_validate_proxy_raises_generic_error(self) -> None:
+        """Test generic parse failure is wrapped in ValueError."""
+        from girsh.core import config
+
+        with (
+            patch("girsh.core.config._validate_proxy_port", side_effect=RuntimeError("boom")),
+            patch.object(logger, "debug") as mock_logger_debug,
+        ):
+            with self.assertRaises(ValueError) as context:
+                config.validate_proxy_url("http://proxy.example.com:8080")
+            self.assertIn("failed to parse proxy url", str(context.exception).lower())
+            self.assertIn("boom", str(context.exception).lower())
+            mock_logger_debug.assert_not_called()
 
     def test_invalid_proxy_unsupported_scheme(self) -> None:
         """Test unsupported proxy scheme raises ValueError."""

@@ -101,12 +101,12 @@ def download_package(download_url: str, output_dir: Path, filename: str | None =
                 logger.error(f"Download of {download_url} failed with status: {http_status}")
     except requests.exceptions.ProxyError as e:
         logger.error(f"Proxy error downloading {download_url}: {e}. Check proxy configuration.")
-    except requests.exceptions.ConnectionError as e:
-        logger.error(f"Connection error downloading {download_url}: {e}")
     except requests.exceptions.ConnectTimeout as e:
         logger.error(f"Connection timeout downloading {download_url}: {e}. Check proxy/network.")
     except requests.exceptions.ReadTimeout as e:
         logger.error(f"Read timeout downloading {download_url}: {e}")
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"Connection error downloading {download_url}: {e}")
     except requests.RequestException as e:
         logger.error(f"Error downloading {download_url}: {e}")
     return None
