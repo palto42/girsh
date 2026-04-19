@@ -156,6 +156,8 @@ class Repository:
     multi_file: bool = False  # Package requires all package files (not single binary)
     version: str | None = None  # Pin program to defined version
     download_url: str | None = None  # Optional download URL template, can contain `{version}` as a variable
+    release_url: str | None = None  # Optional URL to fetch the release metadata from instead of GitHub API
+    version_pattern: str | None = None  # Regex to extract the latest version from the release metadata response
     pre_update_commands: list[str | None] | None = None  # Command to run before updating the package
     post_update_commands: list[str | None] | None = None  # Command to run after updating the package
 
@@ -400,7 +402,6 @@ def get_arguments() -> argparse.Namespace:
         action="store_true",
         help="Run without actually installing or removing any files.",
     )
-    parser.add_argument("-p", "--proxy", type=str, help="Proxy URL for downloading files")
     parser.add_argument(
         "-v",
         "--verbose",

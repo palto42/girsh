@@ -167,8 +167,23 @@ class TestConfigModule(unittest.TestCase):
         repo: config.Repository = repositories["repo1"]
         self.assertEqual(repo.comment, "Test repo")
         self.assertEqual(repo.binary_name, "test_binary")
-        # If no package_pattern is provided for the config.Repository, it defaults to config.General.package_pattern.
         self.assertEqual(repo.package_pattern, "test_pattern")
+
+    def test_update_repositories_config_with_release_url_and_version_pattern(self) -> None:
+        data: dict[str, Any] = {
+            "general": {"installed_file": self.installed_name, "package_pattern": "test_pattern"},
+            "repositories": {
+                "repo1": {
+                    "comment": "Test repo",
+                    "release_url": "https://example.com/releases",
+                    "version_pattern": r"v[0-9]+\.[0-9]+",
+                }
+            },
+        }
+        repositories = config.update_repositories_config(repo_config={}, data=data, default_pattern="test_pattern")
+        repo = repositories["repo1"]
+        self.assertEqual(repo.release_url, "https://example.com/releases")
+        self.assertEqual(repo.version_pattern, r"v[0-9]+\.[0-9]+")
 
     def test_update_repositories_config_not_dict(self) -> None:
         data: dict[str, Any] = {"repositories": []}
@@ -229,6 +244,31 @@ class TestConfigModule(unittest.TestCase):
                     self.assertIn("repo2", repositories)
                     calls = [call.args[0] for call in mock_logger_debug.call_args_list]
                     self.assertTrue(any("Loaded config:" in s for s in calls))
+            finally:
+                Path(tmp_file.name).unlink()
+
+    def test_load_yaml_config_with_release_url_and_version_pattern(self) -> None:
+        with tempfile.NamedTemporaryFile("w+", delete=False) as tmp_file:
+            try:
+                config_data: dict[str, Any] = {
+                    "general": {"installed_file": self.installed_name},
+                    "repositories": {
+                        "repo2": {
+                            "comment": "Another repo",
+                            "release_url": "https://example.com/releases",
+                            "version_pattern": r"v[0-9]+\.[0-9]+",
+                        }
+                    },
+                }
+                tmp_file.write(yaml.safe_dump(config_data))
+                tmp_file.close()
+
+                general, repositories = config.load_yaml_config(tmp_file.name)
+                self.assertEqual(general.installed_file, Path(self.installed_name))
+                self.assertIn("repo2", repositories)
+                repo = repositories["repo2"]
+                self.assertEqual(repo.release_url, "https://example.com/releases")
+                self.assertEqual(repo.version_pattern, r"v[0-9]+\.[0-9]+")
             finally:
                 Path(tmp_file.name).unlink()
 

@@ -29,8 +29,10 @@
     "pymdownx",
     "PYPI",
     "pyupgrade",
+    "superfences",
     "testpaths",
-    "tryceratops"
+    "tryceratops",
+    "venv"
   ],
   "markdownlint.config": {
     "MD007": {

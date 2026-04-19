@@ -1,8 +1,14 @@
 # Changelog
 
-## v0.1.34
+## Version 0.1.35
 
 - New config option and CLI argument to specify a web proxy for the download
+
+## Version 0.1.34
+
+- Added support for custom release URLs and version patterns to enable fetching from non-GitHub sources
+    - Updated documentation with configuration examples
+- Added test coverage for custom release functionality
 
 ## Version 0.1.33
 

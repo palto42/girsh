@@ -58,3 +58,4 @@ markdown_extensions:
       permalink: true
   - pymdownx.arithmatex:
       generic: true
+  - pymdownx.superfences  # nesting code blocks in lists

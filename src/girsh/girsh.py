@@ -26,7 +26,8 @@ def elevate_privileges() -> None:
     if os.geteuid() != 0:
         print("Re-running with elevated privileges...")
         command = ["sudo", sys.executable, *sys.argv]
-        os.execvp("/usr/bin/sudo", command)  # Replace current process with sudo call  # noqa: S606
+        # Replace current process with sudo call
+        os.execvp("/usr/bin/sudo", command)  # noqa:  S606
 
 
 def show_summary(install_summary: dict[RepoResult, int], uninstall_summary: dict[RepoResult, int]) -> None:
@@ -129,7 +130,9 @@ def main() -> int:  # noqa: C901 too complex, but it's the main function and we 
         uninstall_summary = uninstall(repositories=[], installed=installed, dry_run=args.dry_run)
     else:
         uninstall_summary = uninstall(
-            repositories=list(repositories), installed=installed, dry_run=args.dry_run if args.uninstall else True
+            repositories=list(repositories),
+            installed=installed,
+            dry_run=args.dry_run if args.uninstall else True,
         )
     if args.uninstall or args.uninstall_all:
         save_installed(general.installed_file, installed)
@@ -141,7 +144,11 @@ def main() -> int:  # noqa: C901 too complex, but it's the main function and we 
     )
 
     installed, summary = process_repositories(
-        repositories, general, installed, reinstall=reinstall_repos, dry_run=args.dry_run
+        repositories,
+        general,
+        installed,
+        reinstall=reinstall_repos,
+        dry_run=args.dry_run,
     )
 
     show_summary(summary, uninstall_summary)
