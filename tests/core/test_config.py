@@ -86,7 +86,7 @@ class TestConfigModule(unittest.TestCase):
 
     def test_general_set_path(self) -> None:
         g: config.General = config.General()
-        g.bin_base_folder = "/dummy/path"  # type: ignore[assignment]
+        g.bin_base_folder = Path("/dummy/path")
         self.assertIsInstance(g.bin_base_folder, Path)
         self.assertEqual(g.bin_base_folder, Path("/dummy/path"))
 
@@ -100,24 +100,24 @@ class TestConfigModule(unittest.TestCase):
         g: config.General = config.General()
         # Should fail because Path-like is expected
         with self.assertRaises(config.ConversionError):
-            g.installed_file = 1.1  # type: ignore[assignment]
+            g.installed_file = 1.1  # ty: ignore[invalid-assignment]
 
     def test_repository_set_str(self) -> None:
         r: config.Repository = config.Repository()
-        r.comment = 123  # type: ignore[assignment] # Should be auto-converted to a string
+        r.comment = 123  # ty: ignore[invalid-assignment] # Should be auto-converted to a string
         self.assertIsInstance(r.comment, str)
         self.assertEqual(r.comment, "123")
 
     def test_repository_set_bool(self) -> None:
         r: config.Repository = config.Repository()
-        r.multi_file = "True"  # type: ignore[assignment] # Should be auto-converted to bool
+        r.multi_file = "True"  # ty: ignore[invalid-assignment]# Should be auto-converted to bool
         self.assertIsInstance(r.multi_file, bool)
         self.assertEqual(r.multi_file, True)
 
     def test_repository_invalid_conversion(self) -> None:
         r: config.Repository = config.Repository()
         with self.assertRaises(config.ConversionError):
-            r.multi_file = "not_a_boolean"  # type: ignore[assignment] # Should raise ConversionError
+            r.multi_file = "not_a_boolean"  # ty: ignore[invalid-assignment] # Should raise ConversionError
 
     # -------------------------------
     # Tests for update_general_config

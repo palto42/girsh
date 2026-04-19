@@ -9,8 +9,11 @@ from importlib.metadata import version
 from pathlib import Path
 from types import UnionType
 from typing import Any, get_args, get_origin
+from urllib.parse import urlparse
 
 import yaml
+import yaml.parser
+import yaml.scanner
 from loguru import logger
 
 __version__ = version("girsh")
@@ -32,6 +35,88 @@ def convert_to_bool(value: Any) -> Any:
         raise ValueError
 
 
+def _validate_proxy_host(netloc: str) -> None:
+    """Validate proxy host is valid."""
+    if not netloc:
+        msg = "Proxy URL must include hostname (and optionally port)"
+        raise ValueError(msg)
+
+
+def _validate_proxy_scheme(scheme: str) -> None:
+    """Validate proxy scheme is supported.
+
+    Only HTTP and HTTPS proxies are supported.
+    """
+    valid_schemes = ("http", "https")
+    if scheme.lower() not in valid_schemes:
+        msg = f"Unsupported proxy scheme '{scheme}'. Supported schemes: {', '.join(valid_schemes)}"
+        raise ValueError(msg)
+
+
+def _validate_proxy_port(port: str) -> None:
+    """Validate proxy port is in valid range."""
+    try:
+        port_num = int(port)
+    except ValueError as e:
+        msg = f"Invalid proxy port: '{port}' is not a valid number"
+        raise ValueError(msg) from e
+    if not (0 < port_num < 65536):
+        msg = f"Port must be between 1 and 65535, got {port_num}"
+        raise ValueError(msg)
+
+
+def validate_proxy_url(proxy: str | None) -> str:
+    """
+    Validate and normalize proxy URL format.
+
+    Supports HTTP and HTTPS proxies only. Other schemes (SOCKS, FTP, etc.) are not supported.
+
+    Args:
+        proxy (str | None): The proxy URL to validate
+
+    Returns:
+        str: The validated and normalized proxy URL
+
+    Raises:
+        ValueError: If proxy URL format is invalid
+    """
+    if proxy is None:
+        msg = "Proxy cannot be None"
+        raise ValueError(msg)
+
+    proxy = proxy.strip()
+    if not proxy:
+        msg = "Proxy URL cannot be empty"
+        raise ValueError(msg)
+
+    # If no scheme provided, assume http://
+    if "://" not in proxy:
+        proxy = f"http://{proxy}"
+
+    try:
+        parsed = urlparse(proxy)
+
+        # Validate scheme
+        _validate_proxy_scheme(parsed.scheme)
+
+        # Validate host
+        _validate_proxy_host(parsed.netloc)
+
+        # Validate host and port components
+        if ":" in parsed.netloc:
+            parts = parsed.netloc.rsplit(":", 1)
+            port = parts[-1]
+            _validate_proxy_port(port)
+
+        logger.debug(f"Proxy URL validated and normalized: {parsed.scheme}://{parsed.netloc}")
+    except ValueError:
+        raise
+    except Exception as e:
+        msg = f"Failed to parse proxy URL '{proxy}': {e}"
+        raise ValueError(msg) from e
+    return proxy
+
+
 @dataclass
 class General:
     bin_base_folder: Path = Path("/usr/local/bin") if os.geteuid() == 0 else Path.home() / ".local/bin"
@@ -41,8 +126,18 @@ class General:
     download_dir: Path = Path.home() / ".cache" / "girsh" / "downloads"
     package_pattern: str = r".*x86_64.*(gz|zip)$"  # Regex to find the desired package in the release assets
     package_base_folder: Path = Path("/opt/girsh") if os.geteuid() == 0 else Path.home() / ".local/share/girsh"
+    proxy: str | None = None  # Proxy URL for downloading files
 
     def __setattr__(self, name: str, value: Any) -> None:
+        # Special handling for proxy validation
+        if name == "proxy" and value is not None and value != "":
+            try:
+                value = validate_proxy_url(value)
+            except ValueError as e:
+                logger.error(f"Invalid proxy URL: {e}")
+                msg = f"Proxy validation failed: {e}"
+                raise ValueError(msg) from e
+
         expected_type = self.__annotations__.get(name)
         if expected_type is not None and not isinstance(value, expected_type):
             try:
@@ -174,7 +269,7 @@ def load_yaml_config(file_path: str) -> tuple[General, dict[str, Repository]]:
     except PermissionError:
         logger.error(f"Permission denied when reading config file '{file_path}'.")
         sys.exit(1)
-    except (yaml.scanner.ScannerError, yaml.parser.ParserError) as err:  # ty:ignore[possibly-missing-submodule]
+    except (yaml.scanner.ScannerError, yaml.parser.ParserError) as err:
         logger.error(f"YAML syntax error in config file '{file_path}': {err}")
         sys.exit(1)
 
@@ -285,6 +380,11 @@ def get_arguments() -> argparse.Namespace:
         "--edit",
         action="store_true",
         help="Open the config file in the default editor",
+    )
+    commands.add_argument(
+        "--test-proxy",
+        action="store_true",
+        help="Test proxy configuration by making a request",
     )
 
     parser.add_argument(

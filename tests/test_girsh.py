@@ -1,13 +1,17 @@
+# ty: ignore[unresolved-attribute]
 import contextlib
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
+
+from loguru import logger
 
 # Import the module under test as specified.
 from girsh import girsh
@@ -26,6 +30,8 @@ class DummyArgs:
     reinstall: bool = False
     config: str = "dummy_config.yaml"
     system: bool = False
+    proxy: str | None = None
+    test_proxy: bool = False
 
 
 # --- Dummy general config class ---
@@ -64,6 +70,7 @@ def dummy_load_yaml_config(config: str) -> tuple[DummyGeneral, dict]:
     general: Any = DummyGeneral()
     general.installed_file = "dummy_installed_file"
     general.download_dir = "dummy_download_dir"
+    general.proxy = None
     return general, DUMMY_REPO_CONFIG
 
 
@@ -71,6 +78,7 @@ def dummy_load_yaml_config_empty(config: str) -> tuple[DummyGeneral, dict]:
     # Do nothing for testing.
     general: Any = DummyGeneral()
     general.installed_file = "dummy_installed_file"
+    general.proxy = None
     return general, {}
 
 
@@ -219,10 +227,12 @@ class TestMain(unittest.TestCase):
             patch("girsh.girsh.load_yaml_config", side_effect=dummy_load_yaml_config),
             patch("girsh.girsh.load_installed", return_value=(dummy_installed_data)),
             patch("girsh.girsh.show_installed", side_effect=dummy_show_installed) as mock_show,
+            patch("girsh.girsh.os.putenv") as mock_putenv,
         ):
             ret: int = girsh.main()
             self.assertEqual(ret, DUMMY_SHOW_RETURN)
             mock_show.assert_called_once_with(dummy_installed_data, DUMMY_REPO_CONFIG)
+            mock_putenv.assert_not_called()
 
     def test_uninstall_branch(self) -> None:
         dummy_args = DummyArgs(uninstall=True, dry_run=True, config="config.yaml")
@@ -289,6 +299,338 @@ class TestMain(unittest.TestCase):
             self.assertEqual(ret, 0)
             mock_save.assert_called()
 
+    def test_proxy_argument(self) -> None:
+        """Test that CLI proxy argument overrides config file and sets both HTTP and HTTPS."""
+        dummy_args = DummyArgs(config="config.yaml", proxy="http://proxy.example.com:8080")
+        # Proxy in yaml config is expected to be overwritten by CLI argument
+        general, repos = dummy_load_yaml_config("config.yaml")
+        general.proxy = "http://proxy.yaml.com:8080"  # type: ignore[attr-defined]
+        with (
+            patch("girsh.girsh.get_arguments", return_value=dummy_args),
+            patch("girsh.girsh.load_yaml_config", return_value=(general, repos)),
+            patch.dict("os.environ", {}, clear=False),
+            patch("girsh.girsh.process_repositories", return_value=(None, {})),
+            patch("girsh.girsh.load_installed", return_value={}),
+            patch("girsh.girsh.save_installed"),
+        ):
+            import os
+
+            girsh.main()
+            # CLI argument should override config file proxy
+            assert os.environ.get("https_proxy") == "http://proxy.example.com:8080"
+            assert os.environ.get("http_proxy") == "http://proxy.example.com:8080"
+
+    def test_proxy_config_yaml(self) -> None:
+        """Test that config file proxy is used when CLI argument not provided."""
+        dummy_args = DummyArgs(config="config.yaml")
+        general, repos = dummy_load_yaml_config("config.yaml")
+        general.proxy = "http://proxy.yaml.com:8080"  # type: ignore[attr-defined]
+        with (
+            patch("girsh.girsh.get_arguments", return_value=dummy_args),
+            patch("girsh.girsh.load_yaml_config", return_value=(general, repos)),
+            patch.dict("os.environ", {}, clear=False),
+            patch("girsh.girsh.process_repositories", return_value=(None, {})),
+            patch("girsh.girsh.load_installed", return_value={}),
+            patch("girsh.girsh.save_installed"),
+        ):
+            import os
+
+            girsh.main()
+            # Config file proxy should be used
+            assert os.environ.get("https_proxy") == "http://proxy.yaml.com:8080"
+            assert os.environ.get("http_proxy") == "http://proxy.yaml.com:8080"
+
+
+class ProxyValidationTest(unittest.TestCase):
+    """Test proxy URL validation function."""
+
+    def test_valid_proxy_http(self) -> None:
+        """Test valid HTTP proxy URL."""
+        from girsh.core.config import validate_proxy_url
+
+        result = validate_proxy_url("http://proxy.example.com:8080")
+        self.assertEqual(result, "http://proxy.example.com:8080")
+
+    def test_valid_proxy_https(self) -> None:
+        """Test valid HTTPS proxy URL."""
+        from girsh.core.config import validate_proxy_url
+
+        result = validate_proxy_url("https://proxy.example.com:8080")
+        self.assertEqual(result, "https://proxy.example.com:8080")
+
+    def test_valid_proxy_uppercase_scheme(self) -> None:
+        """Test proxy with uppercase scheme (case-insensitive)."""
+        from girsh.core.config import validate_proxy_url
+
+        result = validate_proxy_url("HTTP://proxy.example.com:8080")
+        self.assertEqual(result, "HTTP://proxy.example.com:8080")
+
+    def test_valid_proxy_with_auth(self) -> None:
+        """Test proxy with username and password."""
+        from girsh.core.config import validate_proxy_url
+
+        result = validate_proxy_url("http://user:pass@proxy.example.com:3128")
+        self.assertEqual(result, "http://user:pass@proxy.example.com:3128")
+
+    def test_valid_proxy_no_port(self) -> None:
+        """Test proxy URL without explicit port."""
+        from girsh.core.config import validate_proxy_url
+
+        result = validate_proxy_url("http://proxy.example.com")
+        self.assertEqual(result, "http://proxy.example.com")
+
+    def test_valid_proxy_no_scheme(self) -> None:
+        """Test proxy without scheme defaults to http://."""
+        from girsh.core.config import validate_proxy_url
+
+        result = validate_proxy_url("proxy.example.com:8080")
+        self.assertEqual(result, "http://proxy.example.com:8080")
+
+    def test_invalid_proxy_empty_string(self) -> None:
+        """Test empty proxy string raises ValueError."""
+        from girsh.core.config import validate_proxy_url
+
+        with self.assertRaises(ValueError) as context:
+            validate_proxy_url("")
+        self.assertIn("empty", str(context.exception).lower())
+
+    def test_invalid_proxy_none(self) -> None:
+        """Test None proxy raises ValueError."""
+        from girsh.core.config import validate_proxy_url
+
+        with self.assertRaises(ValueError) as context:
+            validate_proxy_url(None)
+        self.assertIn("proxy cannot be none", str(context.exception).lower())
+
+    def test_validate_proxy_with_port_logs_debug(self) -> None:
+        """Test proxy with port is validated and logs the normalized URL."""
+        from girsh.core.config import validate_proxy_url
+
+        with patch.object(logger, "debug") as mock_logger_debug:
+            result = validate_proxy_url("proxy.example.com:8080")
+            self.assertEqual(result, "http://proxy.example.com:8080")
+            mock_logger_debug.assert_called_once_with(
+                "Proxy URL validated and normalized: http://proxy.example.com:8080"
+            )
+
+    def test_validate_proxy_raises_generic_error(self) -> None:
+        """Test generic parse failure is wrapped in ValueError."""
+        from girsh.core import config
+
+        with (
+            patch("girsh.core.config._validate_proxy_port", side_effect=RuntimeError("boom")),
+            patch.object(logger, "debug") as mock_logger_debug,
+        ):
+            with self.assertRaises(ValueError) as context:
+                config.validate_proxy_url("http://proxy.example.com:8080")
+            self.assertIn("failed to parse proxy url", str(context.exception).lower())
+            self.assertIn("boom", str(context.exception).lower())
+            mock_logger_debug.assert_not_called()
+
+    def test_invalid_proxy_unsupported_scheme(self) -> None:
+        """Test unsupported proxy scheme raises ValueError."""
+        from girsh.core.config import validate_proxy_url
+
+        with self.assertRaises(ValueError) as context:
+            validate_proxy_url("ftp://proxy.example.com:8080")
+        self.assertIn("unsupported", str(context.exception).lower())
+
+    def test_invalid_proxy_socks_not_supported(self) -> None:
+        """Test that SOCKS proxies are not supported."""
+        from girsh.core.config import validate_proxy_url
+
+        # SOCKS4 should be rejected
+        with self.assertRaises(ValueError) as context:
+            validate_proxy_url("socks4://proxy.example.com:1080")
+        self.assertIn("unsupported", str(context.exception).lower())
+
+        # SOCKS5 should be rejected
+        with self.assertRaises(ValueError) as context:
+            validate_proxy_url("socks5://proxy.example.com:1080")
+        self.assertIn("unsupported", str(context.exception).lower())
+
+    def test_invalid_proxy_no_host(self) -> None:
+        """Test proxy URL without host raises ValueError."""
+        from girsh.core.config import validate_proxy_url
+
+        with self.assertRaises(ValueError) as context:
+            validate_proxy_url("http://")
+        self.assertIn("hostname", str(context.exception).lower())
+
+    def test_invalid_proxy_port_zero(self) -> None:
+        """Test port zero raises ValueError."""
+        from girsh.core.config import validate_proxy_url
+
+        with self.assertRaises(ValueError) as context:
+            validate_proxy_url("http://proxy.example.com:0")
+        self.assertIn("port", str(context.exception).lower())
+
+    def test_invalid_proxy_port_out_of_range(self) -> None:
+        """Test port out of range raises ValueError."""
+        from girsh.core.config import validate_proxy_url
+
+        with self.assertRaises(ValueError) as context:
+            validate_proxy_url("http://proxy.example.com:99999")
+        self.assertIn("port", str(context.exception).lower())
+
+    def test_invalid_proxy_non_numeric_port(self) -> None:
+        """Test non-numeric port raises ValueError."""
+        from girsh.core.config import validate_proxy_url
+
+        with self.assertRaises(ValueError) as context:
+            validate_proxy_url("http://proxy.example.com:abc")
+        self.assertIn("port", str(context.exception).lower())
+
+    def test_general_config_proxy_validation(self) -> None:
+        """Test that General config validates proxy on assignment."""
+        from girsh.core.config import General
+
+        config = General()
+        # Valid proxy should be accepted
+        config.proxy = "http://proxy.example.com:8080"
+        self.assertEqual(config.proxy, "http://proxy.example.com:8080")
+
+        # Invalid proxy should raise ValueError
+        with self.assertRaises(ValueError):
+            config.proxy = "ftp://invalid:scheme"
+
+
+class ProxyTestingTest(unittest.TestCase):
+    """Test proxy testing/validation command."""
+
+    def test_test_proxy_command_no_proxy_configured(self) -> None:
+        """Test --test-proxy command with no proxy configured."""
+        dummy_args = DummyArgs(config="config.yaml", test_proxy=True)
+        general, repos = dummy_load_yaml_config("config.yaml")
+        general.proxy = None  # type: ignore[attr-defined]
+        with (
+            patch("girsh.girsh.get_arguments", return_value=dummy_args),
+            patch("girsh.girsh.load_yaml_config", return_value=(general, repos)),
+            patch("girsh.girsh.logger") as mock_logger,
+        ):
+            ret: int | None = girsh.main()
+            self.assertEqual(ret, 1)
+            mock_logger.error.assert_called_once()
+
+    @patch("girsh.core.utils.requests.head")
+    def test_test_proxy_command_successful(self, mock_head: unittest.mock.Mock) -> None:
+        """Test --test-proxy command with successful proxy."""
+        from girsh.core.utils import test_proxy
+
+        mock_response = unittest.mock.Mock()
+        mock_response.ok = True
+        mock_response.status_code = 200
+        mock_head.return_value = mock_response
+
+        result = test_proxy("http://proxy.example.com:8080")
+        self.assertTrue(result)
+        mock_head.assert_called_once()
+
+    @patch("girsh.core.utils.requests.head")
+    def test_test_proxy_command_proxy_error(self, mock_head: unittest.mock.Mock) -> None:
+        """Test --test-proxy command with proxy error."""
+        import requests.exceptions
+
+        from girsh.core.utils import test_proxy
+
+        mock_head.side_effect = requests.exceptions.ProxyError("Proxy connection failed")
+
+        result = test_proxy("http://proxy.example.com:8080")
+        self.assertFalse(result)
+
+    @patch("girsh.core.utils.requests.head")
+    def test_test_proxy_command_timeout(self, mock_head: unittest.mock.Mock) -> None:
+        """Test --test-proxy command with connect timeout."""
+        import requests.exceptions
+
+        from girsh.core.utils import test_proxy
+
+        mock_head.side_effect = requests.exceptions.ConnectTimeout("Connection timeout")
+
+        result = test_proxy("http://proxy.example.com:8080")
+        self.assertFalse(result)
+
+    @patch("girsh.core.utils.requests.head")
+    def test_test_proxy_command_http_error(self, mock_head: unittest.mock.Mock) -> None:
+        """Test --test-proxy command with HTTP error."""
+        from girsh.core.utils import test_proxy
+
+        mock_response = unittest.mock.Mock()
+        mock_response.ok = False
+        mock_response.status_code = 403
+        mock_head.return_value = mock_response
+
+        result = test_proxy("http://proxy.example.com:8080")
+        self.assertFalse(result)
+
+    @patch("girsh.core.utils.requests.head")
+    def test_test_proxy_command_read_timeout(self, mock_head: unittest.mock.Mock) -> None:
+        """Test --test-proxy command with read timeout."""
+        import requests.exceptions
+
+        from girsh.core.utils import test_proxy
+
+        mock_head.side_effect = requests.exceptions.ReadTimeout("Read timeout")
+
+        result = test_proxy("http://proxy.example.com:8080")
+        self.assertFalse(result)
+
+    @patch("girsh.core.utils.requests.head")
+    def test_test_proxy_command_connection_error(self, mock_head: unittest.mock.Mock) -> None:
+        """Test --test-proxy command with connection error."""
+        import requests.exceptions
+
+        from girsh.core.utils import test_proxy
+
+        mock_head.side_effect = requests.exceptions.ConnectionError("Connection refused")
+
+        result = test_proxy("http://proxy.example.com:8080")
+        self.assertFalse(result)
+
+    @patch("girsh.core.utils.requests.head")
+    def test_test_proxy_command_generic_error(self, mock_head: unittest.mock.Mock) -> None:
+        """Test --test-proxy command with generic request exception."""
+        import requests.exceptions
+
+        from girsh.core.utils import test_proxy
+
+        mock_head.side_effect = requests.exceptions.RequestException("Generic error")
+
+        result = test_proxy("http://proxy.example.com:8080")
+        self.assertFalse(result)
+
+    @patch("girsh.core.utils.requests.head")
+    def test_test_proxy_integration_with_cli(self, mock_head: unittest.mock.Mock) -> None:
+        """Test --test-proxy command integration with CLI."""
+        mock_response = unittest.mock.Mock()
+        mock_response.ok = True
+        mock_response.status_code = 200
+        mock_head.return_value = mock_response
+
+        dummy_args = DummyArgs(config="config.yaml", test_proxy=True, proxy="http://proxy.example.com:8080")
+        general, repos = dummy_load_yaml_config("config.yaml")
+        general.proxy = "http://proxy.example.com:8080"  # type: ignore[attr-defined]
+        with (
+            patch("girsh.girsh.get_arguments", return_value=dummy_args),
+            patch("girsh.girsh.load_yaml_config", return_value=(general, repos)),
+        ):
+            ret: int | None = girsh.main()
+            self.assertEqual(ret, 0)
+
+    def test_test_proxy_with_invalid_proxy_url(self) -> None:
+        """Test that invalid proxy URL is rejected before test."""
+        import contextlib
+
+        dummy_args = DummyArgs(config="config.yaml", test_proxy=True, proxy="invalid")
+        dummy_load_yaml_config("config.yaml")
+        with (
+            patch("girsh.girsh.get_arguments", return_value=dummy_args),
+            patch("girsh.girsh.load_yaml_config", side_effect=ValueError("Invalid proxy")),
+            contextlib.suppress(ValueError),
+        ):
+            # Expected to fail during config load due to validation
+            girsh.main()
+
 
 class ElevatePrivilegesTest(unittest.TestCase):
     @patch("os.geteuid", return_value=0)
@@ -313,7 +655,7 @@ class ShowSummaryTest(unittest.TestCase):
         install_summary = {DummyRepoResult.result1: 3, DummyRepoResult.result2: 1}
         uninstall_summary = {DummyRepoResult.fail1: 2, DummyRepoResult.fail2: 1}
 
-        girsh.show_summary(install_summary, uninstall_summary)  # type: ignore[arg-type]
+        girsh.show_summary(install_summary, uninstall_summary)  # ty: ignore[invalid-argument-type]
 
         mock_logger.success.assert_any_call("===============================")
         mock_logger.success.assert_any_call("Summary:")

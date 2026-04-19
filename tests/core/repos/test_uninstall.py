@@ -79,7 +79,7 @@ class TestUninstall(unittest.TestCase):
     @patch("girsh.core.repos.logger")
     def test_uninstall_not_installed(self, mock_logger: MagicMock) -> None:
         result = repos.uninstall(
-            repositories=self.dummy_repositories,  # type: ignore[arg-type]
+            repositories=self.dummy_repositories,  # ty: ignore[invalid-argument-type]
             installed={},
             dry_run=False,
         )
@@ -105,7 +105,7 @@ class TestUninstall(unittest.TestCase):
             patch("girsh.core.utils.run_commands", return_value=True) as mock_run_commands,
         ):
             summary: dict = repos.uninstall(
-                repositories=self.dummy_repositories,  # type: ignore[arg-type]
+                repositories=self.dummy_repositories,  # ty: ignore[invalid-argument-type]
                 installed=installed,
                 dry_run=False,
             )
@@ -202,7 +202,7 @@ class TestUninstall(unittest.TestCase):
         # # binary_path.touch()
         with patch.object(logger, "info") as mock_logger:
             summary: dict = repos.uninstall(
-                repositories=self.dummy_repositories,  # type: ignore[arg-type]
+                repositories=self.dummy_repositories,  # ty: ignore[invalid-argument-type]
                 installed=installed,
                 dry_run=False,
             )
@@ -214,7 +214,7 @@ class TestUninstall(unittest.TestCase):
         installed = {"dummy1": {"tag": "v1.0", "binary": "binary1", "path": str(self.temp_path)}}
         with patch.object(logger, "info") as mock_logger:
             summary: dict = repos.uninstall(
-                repositories=self.dummy_repositories,  # type: ignore[arg-type]
+                repositories=self.dummy_repositories,  # ty: ignore[invalid-argument-type]
                 installed=installed,
                 dry_run=False,
             )
@@ -230,7 +230,7 @@ class TestUninstall(unittest.TestCase):
             patch.object(logger, "success") as mock_logger,
         ):
             result = repos.uninstall(
-                repositories=self.dummy_repositories,  # type: ignore[arg-type]
+                repositories=self.dummy_repositories,  # ty: ignore[invalid-argument-type]
                 installed=installed,
                 dry_run=True,
             )
@@ -247,7 +247,7 @@ class TestUninstall(unittest.TestCase):
             patch.object(logger, "error") as mock_logger,
         ):
             result = repos.uninstall(
-                repositories=self.dummy_repositories,  # type: ignore[arg-type]
+                repositories=self.dummy_repositories,  # ty: ignore[invalid-argument-type]
                 installed=installed,
                 dry_run=False,
             )

@@ -138,7 +138,10 @@ class TestInstalledModule(unittest.TestCase):
     def test_get_comment_found(self) -> None:
         # Set up CONFIG to include a repository.
         repositories = {"test/repo": DummyRepo("A test repo")}
-        comment: str = installed.get_comment("test/repo", repositories=repositories)  # type: ignore[arg-type]
+        comment: str = installed.get_comment(
+            "test/repo",
+            repositories=repositories,  # ty: ignore[invalid-argument-type]
+        )
         self.assertEqual(comment, "A test repo")
 
     def test_get_comment_not_found(self) -> None:
@@ -162,7 +165,7 @@ class TestInstalledModule(unittest.TestCase):
         repositories = {"repo1": DummyRepo("Test comment")}
         data: dict[str, dict[str, str]] = {"repo1": {"binary": "binA", "tag": "v1.1"}}
         with patch.object(logger, "success") as mock_logger:
-            ret: int = installed.show_installed(data, repositories)  # type: ignore[arg-type]
+            ret: int = installed.show_installed(data, repositories)  # ty: ignore[invalid-argument-type]
             self.assertEqual(ret, 0)
             # Verify that table components were logged.
             calls: list[Any] = [call.args[0] for call in mock_logger.call_args_list]

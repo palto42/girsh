@@ -73,7 +73,7 @@ class TestProcessRepository(unittest.TestCase):
         ):
             result, installed = repos.process_repository(
                 repo="owner/repo",
-                repo_config=self.dummy_repositories_config,
+                repo_config=self.dummy_repositories_config,  # ty: ignore[invalid-argument-type]
                 general=self.dummy_general_config,
                 installed_tag=None,
             )
@@ -91,7 +91,7 @@ class TestProcessRepository(unittest.TestCase):
         ):
             result, installed = repos.process_repository(
                 repo="owner/repo",
-                repo_config=self.dummy_repositories_config,
+                repo_config=self.dummy_repositories_config,  # ty: ignore[invalid-argument-type]
                 general=self.dummy_general_config,
                 installed_tag="v1.0",
             )
@@ -112,7 +112,7 @@ class TestProcessRepository(unittest.TestCase):
         ):
             result, installed = repos.process_repository(
                 repo="owner/repo",
-                repo_config=self.dummy_repositories_config,
+                repo_config=self.dummy_repositories_config,  # ty: ignore[invalid-argument-type]
                 general=self.dummy_general_config,
                 installed_tag=None,
                 dry_run=True,
@@ -138,7 +138,7 @@ class TestProcessRepository(unittest.TestCase):
         ):
             result, installed = repos.process_repository(
                 repo="owner/repo",
-                repo_config=DummyRepository(),
+                repo_config=DummyRepository(),  # ty: ignore[invalid-argument-type]
                 general=self.dummy_general_config,
                 installed_tag=None,
                 dry_run=True,
@@ -162,7 +162,7 @@ class TestProcessRepository(unittest.TestCase):
         ):
             result, installed = repos.process_repository(
                 repo="owner/repo",
-                repo_config=self.dummy_repositories_config,
+                repo_config=self.dummy_repositories_config,  # ty: ignore[invalid-argument-type]
                 general=self.dummy_general_config,
                 installed_tag=None,
                 dry_run=True,
@@ -187,7 +187,7 @@ class TestProcessRepository(unittest.TestCase):
         ):
             result, installed = repos.process_repository(
                 repo="owner/repo",
-                repo_config=self.dummy_repositories_config,
+                repo_config=self.dummy_repositories_config,  # ty: ignore[invalid-argument-type]
                 general=self.dummy_general_config,
                 installed_tag=None,
                 dry_run=True,
@@ -219,7 +219,7 @@ class TestProcessRepository(unittest.TestCase):
         ):
             _result, installed = repos.process_repository(
                 repo="owner/repo",
-                repo_config=self.dummy_repositories_config,
+                repo_config=self.dummy_repositories_config,  # ty: ignore[invalid-argument-type]
                 general=self.dummy_general_config,
                 installed_tag=None,
                 dry_run=False,
@@ -257,7 +257,7 @@ class TestProcessRepository(unittest.TestCase):
         ):
             _result, installed = repos.process_repository(
                 repo="owner/repo",
-                repo_config=self.dummy_repositories_config,
+                repo_config=self.dummy_repositories_config,  # ty: ignore[invalid-argument-type]
                 general=self.dummy_general_config,
                 installed_tag=None,
                 dry_run=False,
@@ -288,7 +288,7 @@ class TestProcessRepository(unittest.TestCase):
         ):
             result, _installed = repos.process_repository(
                 repo="owner/repo",
-                repo_config=self.dummy_repositories_config,
+                repo_config=self.dummy_repositories_config,  # ty: ignore[invalid-argument-type]
                 general=self.dummy_general_config,
                 installed_tag=None,
                 dry_run=False,
@@ -316,7 +316,7 @@ class TestProcessRepository(unittest.TestCase):
         ):
             result, _installed = repos.process_repository(
                 repo="owner/repo",
-                repo_config=self.dummy_repositories_config,
+                repo_config=self.dummy_repositories_config,  # ty: ignore[invalid-argument-type]
                 general=self.dummy_general_config,
                 installed_tag=None,
                 dry_run=False,

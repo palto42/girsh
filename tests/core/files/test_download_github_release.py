@@ -143,7 +143,7 @@ class DownloadGithubReleaseTest(unittest.TestCase):
         # Call the function and assert the expected return value
         result = files.download_github_release(url, package_pattern, self.output_dir)
         self.assertIsNotNone(result)
-        self.assertEqual(result[1], "v1.0.0")  # type: ignore[index]
+        self.assertEqual(result[1], "v1.0.0")  # ty: ignore[not-subscriptable]
 
 
 if __name__ == "__main__":

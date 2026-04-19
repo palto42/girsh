@@ -8,7 +8,7 @@ install: ## Install the virtual environment and install the pre-commit hooks
 check: ## Run code quality tools.
 	@echo "🚀 Checking lock file consistency with 'pyproject.toml'"
 	@uv lock --locked
-	@echo "🚀 Linting code: Running pre-commit"
+	@echo "🚀 Linting code, format and check for vulnerabilities: Running pre-commit"
 	@uv run pre-commit run -a
 	@echo "🚀 Static type checking: Running ty"
 	@uv run ty check
@@ -19,6 +19,13 @@ check: ## Run code quality tools.
 test: ## Test the code with pytest
 	@echo "🚀 Testing code: Running pytest"
 	@uv run python -m pytest --cov --cov-config=pyproject.toml --cov-report=xml
+
+.PHONY: test-html
+test-html: ## Test the code with pytest, output coverage report to html
+	@echo "🚀 Testing code: Running pytest"
+	@uv run python -m pytest --cov --cov-config=pyproject.toml --cov-report=html
+	@echo "🚀 Coverage report generated at htmlcov/index.html"
+	@xdg-open htmlcov/index.html > /dev/null 2>&1 &
 
 .PHONY: build
 build: clean-build ## Build wheel file
