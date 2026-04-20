@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 0.1.36
+
+- Add missing "--proxy" CLI argument
+
 ## Version 0.1.35
 
 - New config option and CLI argument to specify a web proxy for the download

@@ -416,5 +416,11 @@ def get_arguments() -> argparse.Namespace:
         action="store_true",
         help="Install as root at system level",
     )
+    parser.add_argument(
+        "-p",
+        "--proxy",
+        type=str,
+        help="Proxy URL for downloading files (e.g., http://proxy.example.com:8080)",
+    )
     parser.add_argument("-V", "--version", action="version", version=f"girsh {__version__}")
     return parser.parse_args()
