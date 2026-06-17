@@ -452,17 +452,23 @@ general:
         with tempfile.NamedTemporaryFile("w+", delete=False) as tmp:
             tmp.write("original content")
             tmp_path: Path = Path(tmp.name)
-            try:
-                with (
-                    patch("subprocess.run", return_value=None),
-                    patch.object(logger, "info") as mock_logger_info,
-                ):
-                    result: int = config.edit_config(tmp_path)
-                    self.assertEqual(result, 0)
-                    calls = [call.args[0] for call in mock_logger_info.call_args_list]
-                    self.assertTrue(any("No changes were made to the config file." in s for s in calls))
-            finally:
-                tmp_path.unlink()
+        try:
+            original_mod_time: float = 1000.0
+
+            def fake_stat(*args: Any, **kwargs: Any) -> Any:
+                return type("stat", (), {"st_mtime": original_mod_time})()
+
+            with (
+                patch("subprocess.run", return_value=None),
+                patch.object(Path, "stat", side_effect=fake_stat),
+                patch.object(logger, "info") as mock_logger_info,
+            ):
+                result: int = config.edit_config(tmp_path)
+                self.assertEqual(result, 0)
+                calls = [call.args[0] for call in mock_logger_info.call_args_list]
+                self.assertTrue(any("No changes were made to the config file." in s for s in calls))
+        finally:
+            tmp_path.unlink()
 
     def test_edit_config_file_exists_modified(self) -> None:
         with tempfile.NamedTemporaryFile("w+", delete=False) as tmp:
@@ -471,18 +477,17 @@ general:
         try:
             original_mod_time: float = 1000.0
             new_mod_time: float = 2000.0
-            # Patch Path.stat so that first call returns original_mod_time and second returns new_mod_time.
+            stat_calls: dict[str, int] = {"count": 0}
+
+            def fake_stat(*args: Any, **kwargs: Any) -> Any:
+                stat_calls["count"] += 1
+                if stat_calls["count"] < 3:
+                    return type("stat", (), {"st_mtime": original_mod_time})()
+                return type("stat", (), {"st_mtime": new_mod_time})()
+
             with (
                 patch("subprocess.run", return_value=None),
-                patch.object(
-                    Path,
-                    "stat",
-                    side_effect=[
-                        type("stat", (), {"st_mtime": original_mod_time})(),
-                        type("stat", (), {"st_mtime": original_mod_time})(),
-                        type("stat", (), {"st_mtime": new_mod_time})(),
-                    ],
-                ),
+                patch.object(Path, "stat", side_effect=fake_stat),
                 patch.object(logger, "info") as mock_logger_info,
             ):
                 result: int = config.edit_config(tmp_path)
