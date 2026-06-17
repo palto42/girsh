@@ -4,7 +4,7 @@ import subprocess
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
-from importlib import resources
+from importlib import resources  # nosemgrep: python.lang.compatibility.python37.python37-compatibility-importlib2
 from importlib.metadata import version
 from pathlib import Path
 from types import UnionType
@@ -138,7 +138,8 @@ class General:
                 msg = f"Proxy validation failed: {e}"
                 raise ValueError(msg) from e
 
-        expected_type = self.__annotations__.get(name)
+        annotations = getattr(type(self), "__annotations__", {})
+        expected_type = annotations.get(name)
         if expected_type is not None and not isinstance(value, expected_type):
             try:
                 value = expected_type(value)
@@ -162,7 +163,11 @@ class Repository:
     post_update_commands: list[str | None] | None = None  # Command to run after updating the package
 
     def __setattr__(self, name: str, value: Any) -> None:
-        expected_type: type | None = self.__annotations__.get(name)
+        annotations = getattr(type(self), "__annotations__", {})
+        expected_type: type | None = annotations.get(name)
+        if expected_type is None:
+            super().__setattr__(name, value)
+            return
         expected_type = get_args(expected_type)[0] if get_origin(expected_type) is UnionType else expected_type
         if get_origin(expected_type) is not None:  # type is a parameterized generic
             expected_type = get_origin(expected_type)

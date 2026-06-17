@@ -3,7 +3,9 @@ import os
 import subprocess
 import tempfile
 import unittest
-from importlib import resources
+from importlib import (  # semgrep: python.lang.compatibility.python37.python37-compatibility-importlib2
+    resources,
+)
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -169,9 +171,14 @@ class TestConfigModule(unittest.TestCase):
         self.assertEqual(repo.binary_name, "test_binary")
         self.assertEqual(repo.package_pattern, "test_pattern")
 
-    def test_update_repositories_config_with_release_url_and_version_pattern(self) -> None:
+    def test_update_repositories_config_with_release_url_and_version_pattern(
+        self,
+    ) -> None:
         data: dict[str, Any] = {
-            "general": {"installed_file": self.installed_name, "package_pattern": "test_pattern"},
+            "general": {
+                "installed_file": self.installed_name,
+                "package_pattern": "test_pattern",
+            },
             "repositories": {
                 "repo1": {
                     "comment": "Test repo",

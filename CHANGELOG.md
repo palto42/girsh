@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 0.1.37
+
+- Add support for Python 3.14
+- Add basic semgrep checks
+
 ## Version 0.1.36
 
 - Add missing "--proxy" CLI argument
