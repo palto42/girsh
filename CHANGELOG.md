@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 0.1.38
+
+- Bump version number
+
 ## Version 0.1.37
 
 - Add support for Python 3.14
