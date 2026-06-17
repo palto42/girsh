@@ -16,11 +16,37 @@ jobs:
         run: echo tag=${GITHUB_REF#refs/*/} >> $GITHUB_OUTPUT
         if: ${{ github.event_name == 'release' }}
 
+      - name: Normalize release version
+        id: version
+        run: |
+          release_version="${{ steps.vars.outputs.tag }}"
+          release_version="${release_version#v}"
+          echo "release_version=$release_version" >> $GITHUB_OUTPUT
+        if: ${{ github.event_name == 'release' }}
+
       - name: Update project version
         run: |
           sed -i "s/^version = \".*\"/version = \"$RELEASE_VERSION\"/" pyproject.toml
         env:
-          RELEASE_VERSION: ${{ steps.vars.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.version.outputs.release_version }}
+        if: ${{ github.event_name == 'release' }}
+
+      - name: Validate pyproject version matches release version
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+
+          release_version = "${{ steps.version.outputs.release_version }}"
+          content = Path("pyproject.toml").read_text()
+          match = re.search(r'^version\s*=\s*"([^"]+)"', content, re.MULTILINE)
+          if not match:
+              raise SystemExit("pyproject.toml does not contain a version field")
+          version = match.group(1)
+          if version != release_version:
+              raise SystemExit(f"Release version {release_version} does not match pyproject.toml version {version}")
+          print(f"pyproject.toml version {version} matches release version {release_version}")
+          PY
         if: ${{ github.event_name == 'release' }}
 
       - name: Upload updated pyproject.toml

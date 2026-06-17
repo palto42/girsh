@@ -369,7 +369,7 @@ wheels = [
 
 [[package]]
 name = "girsh"
-version = "0.1.36"
+version = "0.1.38"
 source = { editable = "." }
 dependencies = [
     { name = "loguru" },
