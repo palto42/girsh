@@ -15,7 +15,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.15.10"
+    rev: "v0.15.17"
     hooks:
       - id: ruff-check
         args: [--exit-non-zero-on-fix]
@@ -23,10 +23,32 @@ repos:
 
   - repo: https://github.com/astral-sh/uv-pre-commit
     # uv version.
-    rev: 0.11.7
+    rev: 0.11.21
     hooks:
       # Update the uv lockfile
       - id: uv-lock
         always_run: true
       - id: uv-audit
         always_run: true
+
+  - repo: https://github.com/semgrep/pre-commit
+    rev: v1.166.0
+    hooks:
+      - id: semgrep
+        args:
+          - --config
+          - p/default
+          - --config
+          - p/security-audit
+          - --config
+          - p/secrets
+          - --exclude-rule
+          - python.lang.compatibility.python37.python37-compatibility-importlib2
+          - --error
+          - --disable-version-check
+          - --jobs
+          - "1"
+          - --max-memory
+          - "512"
+          - --metrics
+          - "off"

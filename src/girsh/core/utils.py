@@ -148,9 +148,19 @@ def run_commands(command_list: list[str | None] | None, info: str) -> bool:
                 if command.startswith("*"):
                     # If the command starts with "*", it is executed in a shell
                     command = command[1:]
-                    cmd_result = subprocess.run(command, shell=True, capture_output=True, text=True)  # noqa: S602
+                    cmd_result = subprocess.run(  # noqa: S602
+                        command,
+                        shell=True,  # nosemgrep: python.lang.security.audit.subprocess-shell-true.subprocess-shell-true
+                        capture_output=True,
+                        text=True,
+                    )
                 else:
-                    cmd_result = subprocess.run(shlex.split(command), capture_output=True, text=True)  # noqa: S603
+                    cmd_result = subprocess.run(  # noqa: S603
+                        shlex.split(command),
+                        shell=False,
+                        capture_output=True,
+                        text=True,
+                    )
             except Exception as e:
                 logger.error(f"Command failed: {command}, error: {e}")
                 return False

@@ -3,7 +3,9 @@ import os
 import subprocess
 import tempfile
 import unittest
-from importlib import resources
+from importlib import (  # semgrep: python.lang.compatibility.python37.python37-compatibility-importlib2
+    resources,
+)
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -119,6 +121,11 @@ class TestConfigModule(unittest.TestCase):
         with self.assertRaises(config.ConversionError):
             r.multi_file = "not_a_boolean"  # ty: ignore[invalid-assignment] # Should raise ConversionError
 
+    def test_repository_set_undefined_attribute(self) -> None:
+        r: config.Repository = config.Repository()
+        r.extra_field = "custom value"
+        self.assertEqual(r.extra_field, "custom value")
+
     # -------------------------------
     # Tests for update_general_config
     # -------------------------------
@@ -169,9 +176,14 @@ class TestConfigModule(unittest.TestCase):
         self.assertEqual(repo.binary_name, "test_binary")
         self.assertEqual(repo.package_pattern, "test_pattern")
 
-    def test_update_repositories_config_with_release_url_and_version_pattern(self) -> None:
+    def test_update_repositories_config_with_release_url_and_version_pattern(
+        self,
+    ) -> None:
         data: dict[str, Any] = {
-            "general": {"installed_file": self.installed_name, "package_pattern": "test_pattern"},
+            "general": {
+                "installed_file": self.installed_name,
+                "package_pattern": "test_pattern",
+            },
             "repositories": {
                 "repo1": {
                     "comment": "Test repo",
@@ -445,17 +457,24 @@ general:
         with tempfile.NamedTemporaryFile("w+", delete=False) as tmp:
             tmp.write("original content")
             tmp_path: Path = Path(tmp.name)
-            try:
-                with (
-                    patch("subprocess.run", return_value=None),
-                    patch.object(logger, "info") as mock_logger_info,
-                ):
-                    result: int = config.edit_config(tmp_path)
-                    self.assertEqual(result, 0)
-                    calls = [call.args[0] for call in mock_logger_info.call_args_list]
-                    self.assertTrue(any("No changes were made to the config file." in s for s in calls))
-            finally:
-                tmp_path.unlink()
+        try:
+            original_mod_time: float = 1000.0
+
+            def fake_stat(*args: Any, **kwargs: Any) -> Any:
+                return type("stat", (), {"st_mtime": original_mod_time})()
+
+            with (
+                patch("subprocess.run", return_value=None),
+                patch.object(Path, "exists", return_value=True),
+                patch.object(Path, "stat", side_effect=fake_stat),
+                patch.object(logger, "info") as mock_logger_info,
+            ):
+                result: int = config.edit_config(tmp_path)
+                self.assertEqual(result, 0)
+                calls = [call.args[0] for call in mock_logger_info.call_args_list]
+                self.assertTrue(any("No changes were made to the config file." in s for s in calls))
+        finally:
+            tmp_path.unlink()
 
     def test_edit_config_file_exists_modified(self) -> None:
         with tempfile.NamedTemporaryFile("w+", delete=False) as tmp:
@@ -464,18 +483,18 @@ general:
         try:
             original_mod_time: float = 1000.0
             new_mod_time: float = 2000.0
-            # Patch Path.stat so that first call returns original_mod_time and second returns new_mod_time.
+            stat_calls: dict[str, int] = {"count": 0}
+
+            def fake_stat(*args: Any, **kwargs: Any) -> Any:
+                stat_calls["count"] += 1
+                if stat_calls["count"] == 1:
+                    return type("stat", (), {"st_mtime": original_mod_time})()
+                return type("stat", (), {"st_mtime": new_mod_time})()
+
             with (
                 patch("subprocess.run", return_value=None),
-                patch.object(
-                    Path,
-                    "stat",
-                    side_effect=[
-                        type("stat", (), {"st_mtime": original_mod_time})(),
-                        type("stat", (), {"st_mtime": original_mod_time})(),
-                        type("stat", (), {"st_mtime": new_mod_time})(),
-                    ],
-                ),
+                patch.object(Path, "exists", return_value=True),
+                patch.object(Path, "stat", side_effect=fake_stat),
                 patch.object(logger, "info") as mock_logger_info,
             ):
                 result: int = config.edit_config(tmp_path)

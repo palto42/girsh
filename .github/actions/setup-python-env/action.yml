@@ -5,11 +5,11 @@ inputs:
   python-version:
     description: "Python version to use"
     required: true
-    default: "3.12"
+    default: "3.13"
   uv-version:
     description: "uv version to use"
     required: true
-    default: "0.11.7"
+    default: "0.11.21"
 
 runs:
   using: "composite"

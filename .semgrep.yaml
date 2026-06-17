@@ -1,0 +1,7 @@
+rules:
+  - p/default
+  - p/security-audit
+  - p/secrets
+
+exclude_rules:
+  - python.lang.compatibility.python37.python37-compatibility-importlib2
