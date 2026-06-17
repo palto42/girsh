@@ -121,6 +121,11 @@ class TestConfigModule(unittest.TestCase):
         with self.assertRaises(config.ConversionError):
             r.multi_file = "not_a_boolean"  # ty: ignore[invalid-assignment] # Should raise ConversionError
 
+    def test_repository_set_undefined_attribute(self) -> None:
+        r: config.Repository = config.Repository()
+        r.extra_field = "custom value"
+        self.assertEqual(r.extra_field, "custom value")
+
     # -------------------------------
     # Tests for update_general_config
     # -------------------------------
