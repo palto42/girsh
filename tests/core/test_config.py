@@ -460,6 +460,7 @@ general:
 
             with (
                 patch("subprocess.run", return_value=None),
+                patch.object(Path, "exists", return_value=True),
                 patch.object(Path, "stat", side_effect=fake_stat),
                 patch.object(logger, "info") as mock_logger_info,
             ):
@@ -481,12 +482,13 @@ general:
 
             def fake_stat(*args: Any, **kwargs: Any) -> Any:
                 stat_calls["count"] += 1
-                if stat_calls["count"] < 3:
+                if stat_calls["count"] == 1:
                     return type("stat", (), {"st_mtime": original_mod_time})()
                 return type("stat", (), {"st_mtime": new_mod_time})()
 
             with (
                 patch("subprocess.run", return_value=None),
+                patch.object(Path, "exists", return_value=True),
                 patch.object(Path, "stat", side_effect=fake_stat),
                 patch.object(logger, "info") as mock_logger_info,
             ):

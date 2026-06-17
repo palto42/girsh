@@ -201,8 +201,9 @@ def update_general_config(general_config: General, data: dict) -> General:
             logger.error(f"General config format is not dict: {data}")
         return general_config
 
+    annotations = getattr(type(general_config), "__annotations__", {})
     for key, value in general_updates.items():
-        if key in general_config.__annotations__:
+        if key in annotations:
             setattr(general_config, key, value)
         else:
             logger.warning(f"Skipped general config entry {key}: {value}")
